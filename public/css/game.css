@@ -241,8 +241,8 @@ body.night .felt { background: radial-gradient(ellipse at 50% 40%, #153a42 0%, #
   .avatar { width: 52px; height: 52px; }
   .plate { font-size: 11px; padding: 2px 5px; }
   .table-wrap { aspect-ratio: 1 / 1; }
-  .center { width: 58%; gap: 8px; }
-  .center-msg { font-size: 13px; }
+  .center { width: 50%; gap: 6px; }
+  .center-msg { font-size: 12.5px; line-height: 1.45; }
   .gb-phase { white-space: normal; text-align: center; }
 }
 
@@ -253,3 +253,35 @@ body.night .felt { background: radial-gradient(ellipse at 50% 40%, #153a42 0%, #
 .over-card { overflow-wrap: anywhere; }
 @media (max-width: 900px) { .chat { height: min(60vh, 520px); } }
 .dossier.hidden { display: none; }
+
+/* 모바일 상단 바: 제목이 옆 컨트롤과 겹치지 않게 줄이고 컨트롤은 줄바꿈 */
+.gb-left > div { min-width: 0; }
+@media (max-width: 900px) {
+  .gamebar { padding: 8px 12px; gap: 8px; }
+  .gb-right { gap: 8px; flex-wrap: wrap; min-width: 0; }
+  .gb-right .skin-pick select { max-width: 120px; }
+}
+@media (max-width: 480px) {
+  .gamebar { grid-template-columns: minmax(0, 1fr) auto; }
+  .gb-timer { width: 40px; height: 40px; }
+  .gb-right .skin-pick select { max-width: 96px; font-size: 12px; }
+}
+
+@media (max-width: 900px) {
+  .gamebar { grid-template-columns: minmax(0, 1fr) auto; }
+  .gb-left { grid-column: 1 / -1; grid-row: 1; }
+  .gb-phase { grid-column: 1; grid-row: 2; justify-self: start; font-size: 15px; padding: 3px 12px; }
+  .gb-right { grid-column: 2; grid-row: 2; flex-wrap: nowrap; }
+  .gb-title { font-size: 15px; }
+  .gb-sub { white-space: nowrap; }
+}
+@media (max-width: 900px) {
+  .gb-phase { white-space: nowrap; flex: none; }
+  .gamebar { grid-template-columns: auto minmax(0, 1fr); }
+  .gb-right { grid-column: 2; min-width: 0; }
+  .gb-right .skin-pick { min-width: 0; }
+  .gb-right .skin-pick svg { display: none; }
+  .gb-right .skin-pick select { max-width: 92px; min-width: 0; }
+  .gb-right .btn-sm { padding-left: 10px; padding-right: 10px; white-space: nowrap; }
+}
+@media (max-width: 900px) { .board { min-height: 0; } }
