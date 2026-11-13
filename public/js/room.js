@@ -47,6 +47,7 @@ function render() {
   const phase = playing ? state.phase : null;
 
   document.body.classList.toggle('night', phase === 'night');
+  document.body.classList.toggle('ghost', playing && !!state.you && !state.you.alive); // 사망자 화면 채도 감소
   $('room-title').textContent = (state.hasPassword ? '🔒 ' : '') + state.title;
   $('phase-label').textContent = playing ? `${state.day}일차 · ${PHASE_NAMES[phase] || ''}` : '대기실';
 
@@ -320,7 +321,11 @@ function wire() {
     phaseStart = Date.now();
     A().phaseChange?.(p);
   });
-  socket.on('vote:update', (v) => { tally = v.tally; if (state) render(); });
+  socket.on('vote:update', (v) => {
+    tally = v.tally;
+    if (state) render();
+    A().voteUpdate?.(tally);
+  });
   socket.on('vote:result', (r) => A().voteResult?.(r));
   socket.on('verdict:result', (r) => A().verdictResult?.(r));
   socket.on('night:saved', () => A().saved?.());
@@ -328,8 +333,8 @@ function wire() {
   socket.on('police:result', (r) => {
     if (!state?.you) return;
     (state.you.policeLog ||= []).push({ ...r });
+    render(); // 스탬프가 먼저 그려진 뒤, 연출이 그 요소를 찾아 애니메이션한다
     A().policeResult?.(r);
-    render();
   });
   socket.on('player:killed', (k) => {
     if (k.role) revealed[k.id] = k.role;

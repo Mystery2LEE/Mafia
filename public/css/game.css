@@ -120,6 +120,7 @@ body.night .vignette { opacity: 1; }
 
 /* ----- 종료 화면 ----- */
 .overlay { position: fixed; inset: 0; z-index: 50; background: rgba(0, 0, 0, 0.75); display: grid; place-items: center; padding: 16px; }
+.overlay.hidden { display: none; }
 .over-card { background: var(--panel); border-radius: var(--radius); padding: 24px; width: min(440px, 100%); text-align: center; }
 .over-card h2 { margin-top: 0; }
 .over-roles { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 8px; }
