@@ -103,27 +103,34 @@
 
   // ---------- 티어 문장 ----------
   const TIER_COLORS = {
-    bronze: ['#e0a171', '#7a4a2a'], silver: ['#e6eaf2', '#7b8599'], gold: ['#f6d77a', '#9a741a'],
-    platinum: ['#9ff0e2', '#2d8f86'], diamond: ['#a9ccff', '#3a62b8'], master: ['#ffb3ec', '#8a3fb8'],
+    thug: ['#c5c0b4', '#4d4a43'], hoodlum: ['#e0a171', '#7a4a2a'], enforcer: ['#f0706a', '#7a1a16'],
+    capo: ['#f6d77a', '#9a741a'], boss: ['#c9a2ff', '#4b2a8f'], godfather: ['#4a4a56', '#0e0e14'],
   };
-  const TIER_ORDER = ['bronze', 'silver', 'gold', 'platinum', 'diamond', 'master'];
+  const TIER_NAMES = { thug: '똘마니', hoodlum: '건달', enforcer: '행동대장', capo: '간부', boss: '보스', godfather: '대부' };
+  // 티어별 문장 안의 상징: 단검 → 중절모 → 해골 → 스페이드 → 왕관 → 장미
+  const TIER_GLYPH = {
+    thug: '<path d="M16 8l2.2 7-2.2 5-2.2-5z" fill="#fff"/><path d="M12.5 16.5h7" stroke="#fff" stroke-width="1.4"/><path d="M16 20v2.5" stroke="#fff" stroke-width="1.6"/>',
+    hoodlum: '<ellipse cx="16" cy="17.5" rx="7.5" ry="2" fill="#fff"/><path d="M11.5 17c0-4 1.8-6.5 4.5-6.5s4.5 2.5 4.5 6.5z" fill="#fff"/><rect x="11.6" y="14.6" width="8.8" height="1.4" fill="rgba(0,0,0,.45)"/>',
+    enforcer: '<path d="M16 9.5c-3.3 0-5.5 2.2-5.5 5 0 1.8.9 3 2 3.8V21h7v-2.7c1.1-.8 2-2 2-3.8 0-2.8-2.2-5-5.5-5z" fill="#fff"/><circle cx="13.6" cy="15" r="1.4" fill="rgba(0,0,0,.6)"/><circle cx="18.4" cy="15" r="1.4" fill="rgba(0,0,0,.6)"/>',
+    capo: '<path d="M16 9c3 3 6 5 6 8a3 3 0 0 1-5 2c.1 1.2.5 2 1.4 2.8h-4.8c.9-.8 1.3-1.6 1.4-2.8a3 3 0 0 1-5-2c0-3 3-5 6-8z" fill="#fff"/>',
+    boss: '<path d="M9.5 21l-1-9 4.3 3.7L16 10l3.2 5.7 4.3-3.7-1 9z" fill="#fff"/>',
+    godfather: '<circle cx="16" cy="13.5" r="4.6" fill="#f3d98b"/><path d="M13 13.5c0-2 1.4-3 3-3s2.6 1 2.6 2.4c0 1.3-1 2-2 2" fill="none" stroke="rgba(0,0,0,.5)" stroke-width="1"/><path d="M16 18v6" stroke="#f3d98b" stroke-width="1.4"/><path d="M16 21c-2.5 0-3.5-1-4-2 2 0 3.2.5 4 2zM16 22c2.2 0 3.3-.8 4-1.8-2 0-3.2.4-4 1.8z" fill="#f3d98b"/>',
+  };
 
   function tierCrest(key, size = 28) {
-    const [hi, lo] = TIER_COLORS[key] || TIER_COLORS.bronze;
-    const rank = Math.max(0, TIER_ORDER.indexOf(key)) + 1;
-    const pips = Array.from({ length: Math.min(rank, 5) }, (_, i) => {
-      const x = 16 - (Math.min(rank, 5) - 1) * 2.2 + i * 4.4;
-      return `<circle cx="${x}" cy="15" r="1.25" fill="#fff" opacity=".92"/>`;
-    }).join('');
-    const star = rank === 6 ? '<path d="M16 9l1.7 3.5 3.8.5-2.8 2.6.7 3.8L16 17.6 12.6 19.4l.7-3.8-2.8-2.6 3.8-.5z" fill="#fff"/>' : pips;
+    const k = TIER_COLORS[key] ? key : 'thug';
+    const [hi, lo] = TIER_COLORS[k];
+    const rim = k === 'godfather' ? '#d4a843' : 'rgba(0,0,0,.45)';
+    const inner = k === 'godfather' ? 'rgba(243,217,139,.7)' : 'rgba(255,255,255,.55)';
     return `<svg class="crest" width="${size}" height="${size}" viewBox="0 0 32 32" aria-hidden="true">
-      <defs><linearGradient id="tc-${key}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${hi}"/><stop offset="1" stop-color="${lo}"/></linearGradient></defs>
-      <path d="M16 2l12 4v9c0 8-5.5 12.5-12 15C9.5 27.5 4 23 4 15V6l12-4z" fill="url(#tc-${key})" stroke="rgba(0,0,0,.45)" stroke-width="1"/>
-      <path d="M16 5l9 3v7c0 6-4 9.5-9 11.6C11 24.5 7 21 7 15V8l9-3z" fill="none" stroke="rgba(255,255,255,.55)" stroke-width=".9"/>
-      ${star}
+      <defs><linearGradient id="tc-${k}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${hi}"/><stop offset="1" stop-color="${lo}"/></linearGradient></defs>
+      <path d="M16 2l12 4v9c0 8-5.5 12.5-12 15C9.5 27.5 4 23 4 15V6l12-4z" fill="url(#tc-${k})" stroke="${rim}" stroke-width="1"/>
+      <path d="M16 5l9 3v7c0 6-4 9.5-9 11.6C11 24.5 7 21 7 15V8l9-3z" fill="none" stroke="${inner}" stroke-width=".9"/>
+      ${TIER_GLYPH[k]}
     </svg>`;
   }
+  const tierName = (key) => TIER_NAMES[key] || '';
 
-  window.Icons = { svg, el, hydrate, avatar, tierCrest };
+  window.Icons = { svg, el, hydrate, avatar, tierCrest, tierName };
   document.addEventListener('DOMContentLoaded', () => hydrate());
 })();

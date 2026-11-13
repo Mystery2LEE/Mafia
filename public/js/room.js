@@ -154,6 +154,12 @@ function renderRing() {
 
     const plate = el('span', 'plate');
     if (p.isHost) plate.insertAdjacentHTML('beforeend', Icons.svg('crown', 12));
+    if (p.tier) {
+      const t = el('span', 'plate-tier');
+      t.title = Icons.tierName(p.tier);
+      t.innerHTML = Icons.tierCrest(p.tier, 14); // 생성된 SVG (모르는 키는 기본 문장)
+      plate.append(t);
+    }
     plate.append(document.createTextNode(p.nickname));
     card.append(plate);
 
@@ -276,7 +282,18 @@ function renderLog() {
     if (m.channel === 'system') {
       li.textContent = m.text;
     } else {
-      if (!mine && m.from) li.append(el('span', 'from', m.from.nickname));
+      if (!mine && m.from) {
+        const from = el('span', 'from');
+        const tk = state && state.players.find((q) => q.id === m.from.id)?.tier;
+        if (tk) {
+          const t = el('span', 'from-tier');
+          t.title = Icons.tierName(tk);
+          t.innerHTML = Icons.tierCrest(tk, 13);
+          from.append(t);
+        }
+        from.append(document.createTextNode(m.from.nickname));
+        li.append(from);
+      }
       li.append(el('span', 'body', m.text));
     }
     log.append(li);

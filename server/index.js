@@ -14,6 +14,7 @@ const { registerSockets } = require('./sockets');
 const { registerRating } = require('./rating');
 const { createStatsRouter } = require('./stats/routes');
 const { createAvatarRouter } = require('./avatar/routes');
+const { tierOf } = require('./rating/tiers');
 
 function createServer({ dbPath, jwtSecret, limits } = {}) {
   const secret = jwtSecret || process.env.JWT_SECRET;
@@ -43,7 +44,14 @@ function createServer({ dbPath, jwtSecret, limits } = {}) {
   const io = new Server(server);
   io.use(socketAuth({ db, jwt }));
 
-  const rooms = new RoomManager({ limits, avatarVersion: (id) => db.avatars.versionOf(id) });
+  const rooms = new RoomManager({
+    limits,
+    // 방 상태에 실어 보낼 표시용 정보: 프로필 사진 버전, 티어(키만. 이름은 클라이언트가 안다)
+    playerInfo: (id) => ({
+      av: db.avatars.versionOf(id),
+      tier: tierOf(db.users.findById(id)?.rating ?? 0).key,
+    }),
+  });
   registerSockets({ io, rooms });
   registerRating({ rooms, db });
 

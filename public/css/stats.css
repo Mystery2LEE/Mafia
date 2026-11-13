@@ -8,12 +8,13 @@
   display: inline-flex; align-items: center; gap: 6px; padding: 2px 12px 2px 6px; border-radius: 99px;
   font-size: 12px; font-weight: 700; color: #151008; white-space: nowrap;
 }
-.tier-bronze { background: linear-gradient(180deg, #f0b98d, #b97a4c); }
-.tier-silver { background: linear-gradient(180deg, #f2f5fb, #aab3c5); }
-.tier-gold { background: linear-gradient(180deg, #ffe597, #d4a843); }
-.tier-platinum { background: linear-gradient(180deg, #b8fff3, #55c4b8); }
-.tier-diamond { background: linear-gradient(180deg, #cfe1ff, #6f9be6); }
-.tier-master { background: linear-gradient(180deg, #ffd0f3, #d27be6); }
+/* 티어: 똘마니 → 건달 → 행동대장 → 간부 → 보스 → 대부 */
+.tier-thug { background: linear-gradient(180deg, #e4e0d6, #a49e90); }
+.tier-hoodlum { background: linear-gradient(180deg, #f0b98d, #b97a4c); }
+.tier-enforcer { background: linear-gradient(180deg, #ffb0aa, #d8524b); }
+.tier-capo { background: linear-gradient(180deg, #ffe597, #d4a843); }
+.tier-boss { background: linear-gradient(180deg, #dcc4ff, #9567d9); }
+.tier-godfather { background: linear-gradient(180deg, #3a3a46, #14141b); color: #f3d98b; box-shadow: 0 0 0 1px #d4a843 inset; }
 
 /* ----- 랭킹 ----- */
 .podium { display: grid; grid-template-columns: 1fr 1.15fr 1fr; align-items: end; gap: 12px; margin: 18px 0 26px; }

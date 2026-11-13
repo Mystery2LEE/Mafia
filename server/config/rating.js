@@ -18,11 +18,11 @@ module.exports = {
 
   // 티어: min 이상 ~ 다음 티어 min 미만. 오름차순.
   tiers: [
-    { key: 'bronze', name: '브론즈', min: 0 },
-    { key: 'silver', name: '실버', min: 1000 },
-    { key: 'gold', name: '골드', min: 1150 },
-    { key: 'platinum', name: '플래티넘', min: 1300 },
-    { key: 'diamond', name: '다이아', min: 1500 },
-    { key: 'master', name: '마스터', min: 1750 },
+    { key: 'thug', name: '똘마니', min: 0 },
+    { key: 'hoodlum', name: '건달', min: 1000 },
+    { key: 'enforcer', name: '행동대장', min: 1150 },
+    { key: 'capo', name: '간부', min: 1300 },
+    { key: 'boss', name: '보스', min: 1500 },
+    { key: 'godfather', name: '대부', min: 1750 },
   ],
 };

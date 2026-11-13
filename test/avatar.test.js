@@ -72,6 +72,7 @@ test('프로필 사진', async (t) => {
     const st = await waitFor(sb, 'room:state', (s) => s.players.length === 2);
     assert.strictEqual(st.players.find((x) => x.id === a.body.user.id).av, av);
     assert.strictEqual(st.players.find((x) => x.id === b.body.user.id).av, undefined);
+    assert.strictEqual(st.players[0].tier, 'hoodlum'); // 기본 레이팅 1000 = 건달
   });
 
   await t.test('삭제하면 기본 아바타로 돌아가고, 다시 올려도 버전이 겹치지 않는다', async () => {

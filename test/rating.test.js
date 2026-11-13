@@ -13,18 +13,18 @@ const delta = (calc, id) => calc.players.find((p) => p.id === id).delta;
 
 test('티어 경계값', () => {
   const name = (r) => tierOf(r).name;
-  assert.equal(name(0), '브론즈');
-  assert.equal(name(999), '브론즈');
-  assert.equal(name(1000), '실버');
-  assert.equal(name(1149), '실버');
-  assert.equal(name(1150), '골드');
-  assert.equal(name(1299), '골드');
-  assert.equal(name(1300), '플래티넘');
-  assert.equal(name(1499), '플래티넘');
-  assert.equal(name(1500), '다이아');
-  assert.equal(name(1749), '다이아');
-  assert.equal(name(1750), '마스터');
-  assert.equal(name(9999), '마스터');
+  assert.equal(name(0), '똘마니');
+  assert.equal(name(999), '똘마니');
+  assert.equal(name(1000), '건달');
+  assert.equal(name(1149), '건달');
+  assert.equal(name(1150), '행동대장');
+  assert.equal(name(1299), '행동대장');
+  assert.equal(name(1300), '간부');
+  assert.equal(name(1499), '간부');
+  assert.equal(name(1500), '보스');
+  assert.equal(name(1749), '보스');
+  assert.equal(name(1750), '대부');
+  assert.equal(name(9999), '대부');
 });
 
 test('계산: 승리 +25 / 패배 -15, 생존 +5, 경찰/의사 보너스', () => {
@@ -178,8 +178,8 @@ test('게임 종료 → match 기록과 rating_delta 가 규칙대로 저장되�
   assert.equal(mine.before, 1000);
   assert.equal(mine.after, 1040);
   assert.equal(mine.delta, 40);
-  assert.equal(mine.tierBefore.name, '실버');
-  assert.equal(mine.tierAfter.name, '실버');
+  assert.equal(mine.tierBefore.name, '건달');
+  assert.equal(mine.tierAfter.name, '건달');
   assert.deepEqual(mine.breakdown.map((b) => b.key), ['win', 'survived', 'policeHit']);
   // 다른 사람의 점수 정보는 오지 않는다
   assert.equal(police.socket.events.filter((e) => e.event === 'game:rating').length, 1);
@@ -259,7 +259,7 @@ test('랭킹/프로필 API: 로그인 필요, 상위 50, 승률/직업별/최근
   const pf = await (await fetch(`${srv.url}/api/profile`, { headers: { cookie: u.cookie } })).json();
   assert.equal(pf.user.nickname, u.user.nickname);
   assert.equal(pf.user.rating, 1000 + 8 * 30 - 4 * 10);
-  assert.equal(pf.user.tier.name, '골드');
+  assert.equal(pf.user.tier.name, '행동대장');
   assert.equal(pf.totals.games, 12);
   assert.equal(pf.recent.length, 10);
   assert.equal(pf.recent[0].roomTitle, 'r11'); // 최신 경기 순

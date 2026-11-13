@@ -11,9 +11,9 @@ const TIME_KEYS = Object.keys(defaults.defaultTimes);
  * 변경은 이벤트로 알린다: 'lobby'(방 목록 변경), 'room'(roomId: 방 내부 상태 변경)
  */
 class RoomManager extends EventEmitter {
-  constructor({ limits, avatarVersion } = {}) {
+  constructor({ limits, playerInfo } = {}) {
     super();
-    this.avatarVersion = avatarVersion; // (userId) => 프로필 사진 버전(없으면 0)
+    this.playerInfo = playerInfo; // (userId) => { av, tier } 표시용 정보 (선택)
     this.limits = {
       ...defaults.limits,
       ...limits,
@@ -78,7 +78,7 @@ class RoomManager extends EventEmitter {
     const game = new Game({
       id: this._newId(), title: t, maxPlayers, passwordHash, times: normTimes, limits: this.limits,
       options: doctorSelfProtect === undefined ? {} : { doctorSelfProtect },
-      mafiaCount, avatarVersion: this.avatarVersion,
+      mafiaCount, playerInfo: this.playerInfo,
     });
     this._wire(game);
     game.addPlayer(user);
