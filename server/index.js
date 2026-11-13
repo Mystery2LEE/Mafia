@@ -26,6 +26,7 @@ function createServer({ dbPath, jwtSecret, limits } = {}) {
   app.use(express.json({ limit: '10kb' }));
   app.use(cookieParser());
 
+  app.get('/healthz', (req, res) => res.json({ ok: true })); // 배포 환경의 헬스체크용
   app.use('/api/auth', createAuthRouter({ db, jwt }));
   app.use('/api', createStatsRouter({ db, jwt }));
 

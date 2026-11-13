@@ -1,0 +1,25 @@
+# Render 배포 설정 (Blueprint). Render 대시보드 → New → Blueprint 로 이 저장소를 연결한다.
+#
+# 주의 1) 방/타이머 상태가 서버 메모리에 있으므로 인스턴스는 반드시 1개여야 한다 (스케일 아웃 금지).
+# 주의 2) SQLite 파일은 디스크에 있어야 재배포 후에도 전적이 남는다. 디스크는 유료(starter 이상) 플랜에서만 붙일 수 있다.
+#         무료 플랜을 쓰면 재배포/재시작 때마다 계정과 전적이 사라진다 (그땐 disk 블록과 DB_PATH 를 빼고 쓰면 된다).
+services:
+  - type: web
+    name: web-mafia
+    runtime: node
+    plan: starter
+    numInstances: 1
+    buildCommand: npm install --omit=dev
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DB_PATH
+        value: /var/data/mafia.db
+    disk:
+      name: mafia-data
+      mountPath: /var/data
+      sizeGB: 1
