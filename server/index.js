@@ -11,6 +11,8 @@ const { createAuthRouter, userFromCookieHeader } = require('./auth/routes');
 const { socketAuth } = require('./auth/socketAuth');
 const { RoomManager } = require('./lobby/RoomManager');
 const { registerSockets } = require('./sockets');
+const { registerRating } = require('./rating');
+const { createStatsRouter } = require('./stats/routes');
 
 function createServer({ dbPath, jwtSecret, limits } = {}) {
   const secret = jwtSecret || process.env.JWT_SECRET;
@@ -25,6 +27,7 @@ function createServer({ dbPath, jwtSecret, limits } = {}) {
   app.use(cookieParser());
 
   app.use('/api/auth', createAuthRouter({ db, jwt }));
+  app.use('/api', createStatsRouter({ db, jwt }));
 
   // 루트: 로그인 여부에 따라 이동
   app.get('/', (req, res) => {
@@ -39,6 +42,7 @@ function createServer({ dbPath, jwtSecret, limits } = {}) {
 
   const rooms = new RoomManager({ limits });
   registerSockets({ io, rooms });
+  registerRating({ rooms, db });
 
   return {
     app, server, io, db, jwt, rooms,
