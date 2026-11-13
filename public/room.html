@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>마피아 - 대기실</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/lobby.css">
+</head>
+<body>
+  <header class="topbar">
+    <img src="/img/logo.svg" alt="마피아" class="topbar-logo">
+    <span id="room-title" class="topbar-me"></span>
+    <button class="btn-sm ghost" id="leave" type="button">방 나가기</button>
+  </header>
+
+  <main class="lobby">
+    <h2>대기실 <span id="count" class="room-count"></span></h2>
+    <ul id="players" class="players"></ul>
+    <p id="hint" style="color:var(--muted);font-size:13px"></p>
+  </main>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/room.js"></script>
+</body>
+</html>

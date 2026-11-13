@@ -5,22 +5,64 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>마피아 - 로비</title>
   <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/lobby.css">
 </head>
 <body>
-  <main class="card">
-    <h1>로비</h1>
-    <p id="me" style="text-align:center;color:var(--muted)"></p>
-    <button class="btn" id="logout" type="button">로그아웃</button>
+  <header class="topbar">
+    <img src="/img/logo.svg" alt="마피아" class="topbar-logo">
+    <span id="me" class="topbar-me"></span>
+    <button class="btn-sm" id="open-create" type="button">방 만들기</button>
+    <button class="btn-sm ghost" id="logout" type="button">로그아웃</button>
+  </header>
+
+  <main class="lobby">
+    <h2>방 목록</h2>
+    <div id="empty" class="empty hidden">열린 방이 없습니다. 방을 만들어 보세요!</div>
+    <ul id="rooms" class="room-list"></ul>
+    <div class="msg" id="msg" role="alert"></div>
   </main>
+
+  <dialog id="create-dialog">
+    <form id="create-form" method="dialog">
+      <h3>방 만들기</h3>
+      <label for="c-title">제목</label>
+      <input id="c-title" maxlength="30" required>
+      <label for="c-max">최대 인원 (4~12)</label>
+      <input id="c-max" type="number" min="4" max="12" value="8" required>
+      <label for="c-pw">비밀번호 (선택)</label>
+      <input id="c-pw" type="password" maxlength="20" autocomplete="off">
+      <details>
+        <summary>페이즈 시간 설정 (초, 선택)</summary>
+        <div class="times">
+          <label>밤 <input id="t-night" type="number" min="5" max="180" placeholder="30"></label>
+          <label>토론 <input id="t-discussion" type="number" min="5" max="180" placeholder="90"></label>
+          <label>투표 <input id="t-vote" type="number" min="5" max="180" placeholder="30"></label>
+          <label>변론 <input id="t-defense" type="number" min="5" max="180" placeholder="20"></label>
+          <label>찬반 <input id="t-verdict" type="number" min="5" max="180" placeholder="15"></label>
+        </div>
+      </details>
+      <div class="dialog-actions">
+        <button type="button" class="btn-sm ghost" data-close>취소</button>
+        <button type="submit" class="btn-sm">만들기</button>
+      </div>
+      <div class="msg" id="create-msg" role="alert"></div>
+    </form>
+  </dialog>
+
+  <dialog id="pw-dialog">
+    <form id="pw-form" method="dialog">
+      <h3>비밀번호 입력</h3>
+      <input id="pw-input" type="password" maxlength="20" autocomplete="off" required>
+      <div class="dialog-actions">
+        <button type="button" class="btn-sm ghost" data-close>취소</button>
+        <button type="submit" class="btn-sm">입장</button>
+      </div>
+      <div class="msg" id="pw-msg" role="alert"></div>
+    </form>
+  </dialog>
+
+  <script src="/socket.io/socket.io.js"></script>
   <script src="/js/api.js"></script>
-  <script>
-    requireLogin().then((u) => {
-      document.getElementById('me').textContent = `${u.nickname} (레이팅 ${u.rating})`;
-    });
-    document.getElementById('logout').onclick = async () => {
-      await api('/api/auth/logout', {});
-      location.href = '/login.html';
-    };
-  </script>
+  <script src="/js/lobby.js"></script>
 </body>
 </html>

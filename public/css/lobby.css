@@ -1,0 +1,46 @@
+.topbar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px; background: var(--panel);
+}
+.topbar-logo { height: 32px; }
+.topbar-me { margin-right: auto; color: var(--muted); font-size: 14px; }
+
+.btn-sm {
+  padding: 7px 14px; border: 0; border-radius: 6px; cursor: pointer;
+  background: var(--accent); color: #1a1a1a; font: inherit; font-weight: bold;
+}
+.btn-sm.ghost { background: var(--panel-2); color: var(--text); font-weight: normal; }
+.btn-sm:disabled { opacity: 0.5; cursor: default; }
+
+.lobby { max-width: 720px; margin: 0 auto; padding: 16px; }
+.empty { padding: 40px; text-align: center; color: var(--muted); }
+
+.room-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.room-item {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--panel); border-radius: var(--radius); padding: 12px 14px;
+}
+.room-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: bold; }
+.room-host { color: var(--muted); font-size: 12px; }
+.room-count { font-variant-numeric: tabular-nums; }
+.badge { padding: 2px 8px; border-radius: 99px; font-size: 12px; background: var(--panel-2); }
+.badge.waiting { background: #1f4d34; color: #8be0b0; }
+.badge.playing { background: #5a2420; color: #f3a29c; }
+
+dialog {
+  background: var(--panel); color: var(--text); border: 0; border-radius: var(--radius);
+  padding: 20px; width: min(360px, calc(100vw - 32px));
+}
+dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
+dialog h3 { margin: 0 0 4px; }
+details { margin-top: 12px; color: var(--muted); font-size: 13px; }
+.times { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+
+.players { list-style: none; margin: 12px 0; padding: 0; display: grid; gap: 6px; }
+.player-item {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--panel-2); border-radius: 6px; padding: 8px 12px;
+}
+.player-item.offline { opacity: 0.5; }
+.crown { color: var(--accent); }
