@@ -10,7 +10,7 @@ module.exports = {
     ingameGraceMs: 60_000,
     phaseSec: { min: 5, max: 180 },
     // 방 설정과 무관하게 고정인 페이즈 길이(초)
-    fixedSec: { roleReveal: 5, morning: 5, execution: 4 },
+    fixedSec: { roleReveal: 5, morning: 5, execution: 5 },
     // 1초가 몇 ms인가. 테스트에서 줄여서 타이머를 빠르게 돌린다.
     secondMs: 1000,
     // 채팅 도배 방지: perMs 동안 count개까지
