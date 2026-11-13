@@ -1,0 +1,19 @@
+/* 로그인: 밤의 도시 + 한 줄기 스포트라이트 */
+.login-bg {
+  position: fixed; inset: 0; z-index: -3;
+  background: url(/img/night.svg) center / cover no-repeat;
+  filter: saturate(0.8) brightness(0.55);
+}
+.login-bg::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 35%, transparent 20%, rgba(5, 3, 8, 0.88) 78%);
+}
+.login-beam {
+  position: fixed; top: -10vh; left: 50%; width: min(620px, 90vw); height: 120vh; z-index: -2;
+  transform: translateX(-50%); pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 236, 190, 0.28), rgba(255, 236, 190, 0.02) 75%);
+  clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%);
+  animation: beam 6s ease-in-out infinite alternate;
+}
+@keyframes beam { from { opacity: 0.65; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .login-beam { animation: none; } }
