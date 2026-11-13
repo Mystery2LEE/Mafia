@@ -20,6 +20,7 @@ const ERRORS = {
   wrong_phase: '지금은 할 수 없는 단계입니다.', invalid_target: '선택할 수 없는 대상입니다.',
   no_ability: '능력이 없는 직업입니다.', rate_limited: '너무 빠르게 보내고 있습니다.',
   invalid_text: '1~200자로 입력하세요.', invalid_vote: '잘못된 요청입니다.',
+  already_hurried: '이미 시간이 줄어들었습니다.', no_vote_today: '첫날은 투표가 없어 건너뛸 것이 없습니다.',
 };
 const RING = 113.1; // 타이머 원의 둘레(2πr, r=18)
 
@@ -169,7 +170,6 @@ function renderRing() {
     else if (mates.some((m) => m.id === p.id) && p.id !== state.youId) { tag = '마피아 동료'; tagCls += ' mafia'; }
     else if (Object.values(picks).includes(p.id) && state.phase === 'night') { tag = '지목됨'; tagCls += ' mafia'; }
     else if (!p.connected) tag = '연결 끊김';
-    else if (p.id === state.youId) tag = '나';
     card.append(el('div', tagCls, tag));
 
     if (state.phase === 'vote' && playing) {
@@ -193,6 +193,7 @@ function stampEl(kind, content) {
 function renderActions() {
   const box = $('actions');
   box.replaceChildren();
+  $('skipbar').replaceChildren();
   const msg = $('center-msg');
   const you = state.you;
 
@@ -253,6 +254,30 @@ function renderActions() {
     case 'execution': msg.textContent = '처형이 집행됩니다...'; break;
     default: msg.textContent = '';
   }
+  renderSkipbar();
+}
+
+// 시간 단축 / 오늘 건너뛰기: 생존자 과반이 동의해야 적용된다 (판정은 서버)
+function renderSkipbar() {
+  const bar = $('skipbar');
+  const sk = state.skip;
+  if (!sk || !state.you?.alive) return;
+  const mk = (icon, label, n, on, handler) => {
+    const b = el('button', `skipbtn${on ? ' on' : ''}`);
+    b.type = 'button';
+    b.setAttribute('aria-pressed', String(on));
+    b.innerHTML = `${Icons.svg(icon, 14)}<span>${label}</span><em>${n}/${sk.need}</em>`;
+    b.onclick = handler;
+    bar.append(b);
+  };
+  if (sk.canHurry) mk('hourglass', '시간 단축', sk.hurry, state.you.hurry, () => toggleVote('phase:hurry', !state.you.hurry));
+  if (sk.canSkip) mk('moon', '오늘 건너뛰기', sk.skip, state.you.skip, () => toggleVote('day:skip', !state.you.skip));
+}
+
+function toggleVote(event, on) {
+  socket.emit(event, { on }, (res) => {
+    if (res && res.error) flash(ERRORS[res.error] || '지금은 할 수 없습니다.');
+  });
 }
 
 function renderTabs() {

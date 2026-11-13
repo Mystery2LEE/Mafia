@@ -62,6 +62,9 @@ class Game extends EventEmitter {
     this.nightActs = this._emptyNight();
     this.ballots = new Map(); // voterId -> targetId (낮 투표)
     this.verdicts = new Map(); // voterId -> boolean (찬반)
+    this.hurryVotes = new Set(); // 이번 단계 '시간 단축' 동의자 (단계가 바뀌면 초기화)
+    this.skipVotes = new Set(); // 이번 단계 '오늘 건너뛰기(처형 투표 없이 밤으로)' 동의자
+    this.hurried = false; // 이번 단계에서 이미 시간을 줄였는가
     this.policeLog = []; // 경찰에게만 보이는 누적 조사 결과
   }
 
@@ -156,6 +159,7 @@ class Game extends EventEmitter {
     this.nightActs = this._emptyNight();
     this.ballots.clear();
     this.verdicts.clear();
+    this._resetSkipVotes();
     const mafiaTeam = this._mafiaList();
     for (const p of this.players.values()) {
       this.emit('toUser', p.id, 'role:assigned', {
@@ -204,6 +208,7 @@ class Game extends EventEmitter {
     if (this.destroyed) return;
     clearTimeout(this.timer);
     this.phase = phase;
+    this._resetSkipVotes();
     this.endsAt = Date.now() + this._ms(sec);
     this.timer = setTimeout(() => this._advance(), this._ms(sec));
     this.timer.unref?.();
@@ -255,6 +260,65 @@ class Game extends EventEmitter {
         if (this._checkWin()) return;
         return this._startNight();
     }
+  }
+
+  // ---------- 시간 단축 / 오늘 건너뛰기 (생존자 과반 동의) ----------
+
+  _resetSkipVotes() { this.hurryVotes.clear(); this.skipVotes.clear(); this.hurried = false; }
+
+  /** 과반에 필요한 인원 (생존자 기준) */
+  _majority() { return Math.floor(this._aliveCount() / 2) + 1; }
+
+  _countAlive(set) {
+    let n = 0;
+    for (const id of set) if (this._isAlive(id)) n++;
+    return n;
+  }
+
+  _canVoteSkip() {
+    // 첫날 낮은 원래 처형 투표가 없으므로 건너뛸 것이 없다
+    return this.phase === 'vote' || (this.phase === 'discussion' && !(this.day === 1 && !this.limits.firstDayVote));
+  }
+
+  _toggle(set, userId, on) { if (on) set.add(userId); else set.delete(userId); }
+
+  /** 시간 단축 동의/철회. 생존자 과반이 동의하면 남은 시간이 hurrySec 로 줄어든다. */
+  voteHurry(userId, on) {
+    const me = this.players.get(userId);
+    if (!me || me.left || !me.alive || this.status !== 'playing') return { error: 'forbidden' };
+    if (!['discussion', 'vote', 'night', 'defense'].includes(this.phase)) return { error: 'wrong_phase' };
+    if (this.hurried) return { error: 'already_hurried' };
+    this._toggle(this.hurryVotes, userId, on !== false);
+    if (this._countAlive(this.hurryVotes) >= this._majority()) {
+      const target = this._ms(this.limits.hurrySec);
+      if (this.endsAt - Date.now() > target) {
+        this.endsAt = Date.now() + target;
+        clearTimeout(this.timer);
+        this.timer = setTimeout(() => this._advance(), target);
+        this.timer.unref?.();
+      }
+      this.hurried = true;
+      this._system(`과반이 동의해 남은 시간이 ${this.limits.hurrySec}초로 줄었습니다.`);
+    }
+    this.emit('room');
+    return { ok: true };
+  }
+
+  /** 오늘 건너뛰기 동의/철회. 과반이면 처형 투표 없이 곧바로 밤이 된다. */
+  voteSkip(userId, on) {
+    const me = this.players.get(userId);
+    if (!me || me.left || !me.alive || this.status !== 'playing') return { error: 'forbidden' };
+    if (!['discussion', 'vote'].includes(this.phase)) return { error: 'wrong_phase' };
+    if (!this._canVoteSkip()) return { error: 'no_vote_today' };
+    this._toggle(this.skipVotes, userId, on !== false);
+    if (this._countAlive(this.skipVotes) >= this._majority()) {
+      this._system('과반이 동의해 오늘은 처형 없이 넘어갑니다. 곧바로 밤이 됩니다.');
+      this.emit('toRoom', 'day:skipped', {});
+      this._startNight();
+    } else {
+      this.emit('room');
+    }
+    return { ok: true };
   }
 
   // ---------- 밤 능력 ----------
@@ -646,6 +710,11 @@ class Game extends EventEmitter {
       })),
     };
     if (playing && me) {
+      state.skip = {
+        hurry: this._countAlive(this.hurryVotes), skip: this._countAlive(this.skipVotes), need: this._majority(),
+        canHurry: ['discussion', 'vote', 'night', 'defense'].includes(this.phase) && !this.hurried,
+        canSkip: ['discussion', 'vote'].includes(this.phase) && this._canVoteSkip(),
+      };
       state.phase = this.phase;
       state.day = this.day;
       state.endsAt = this.endsAt;
@@ -661,6 +730,8 @@ class Game extends EventEmitter {
         policeLog: me.role === 'police' ? this.policeLog : undefined,
         vote: this.phase === 'vote' ? (this.ballots.get(userId) ?? null) : undefined,
         verdict: this.phase === 'verdict' ? (this.verdicts.get(userId) ?? null) : undefined,
+        hurry: this.hurryVotes.has(userId),
+        skip: this.skipVotes.has(userId),
       };
     }
     return state;

@@ -119,6 +119,9 @@ function registerSockets({ io, rooms }) {
       targetId === null ? g.castVote(user.id, null)
         : asId(targetId) === null ? { error: 'invalid_target' } : g.castVote(user.id, targetId)));
     socket.on('verdict:cast', gameAct((g, { agree }) => g.castVerdict(user.id, agree)));
+    // 생존자 과반 동의로 시간 단축 / 오늘 건너뛰기 (on: true 동의, false 철회)
+    socket.on('phase:hurry', gameAct((g, { on }) => g.voteHurry(user.id, on !== false)));
+    socket.on('day:skip', gameAct((g, { on }) => g.voteSkip(user.id, on !== false)));
 
     // 발신 권한은 서버(Game.chat)가 매번 검증한다. 클라이언트가 보내는 channel 값은 신뢰하지 않는다.
     socket.on('chat:send', (payload, ack) => {
