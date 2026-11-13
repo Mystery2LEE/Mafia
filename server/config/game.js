@@ -13,6 +13,8 @@ module.exports = {
     fixedSec: { roleReveal: 5, morning: 5, execution: 4 },
     // 1초가 몇 ms인가. 테스트에서 줄여서 타이머를 빠르게 돌린다.
     secondMs: 1000,
+    // 채팅 도배 방지: perMs 동안 count개까지
+    chatRate: { count: 5, perMs: 3000 },
   },
   // 페이즈 기본 시간(초)
   defaultTimes: { night: 30, discussion: 90, vote: 30, defense: 20, verdict: 15 },

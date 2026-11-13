@@ -71,4 +71,44 @@ const emitAck = (socket, event, payload) =>
   new Promise((resolve) => (payload === undefined ? socket.emit(event, resolve) : socket.emit(event, payload, resolve)));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-module.exports = { startTestServer, register, newUser, connectSocket, waitFor, clearEvents, emitAck, sleep };
+/**
+ * 방/게임 테스트용 하네스. 플레이어 생성, 방 만들기, 게임 시작(직업 수신까지)을 묶어 준다.
+ * sockets 배열에 소켓을 모아 두므로 테스트 종료 시 한 번에 닫을 수 있다.
+ */
+function harness(srv, sockets, defaultTimes) {
+  async function player(label) {
+    const u = await newUser(srv.url, label);
+    const socket = await connectSocket(srv.url, u.cookie);
+    sockets.push(socket);
+    return { ...u, socket };
+  }
+  async function makeRoom(n, opts = {}) {
+    const ps = [];
+    for (let i = 0; i < n; i++) ps.push(await player(`g${i}`));
+    const r = await emitAck(ps[0].socket, 'room:create', {
+      title: '게임방', maxPlayers: Math.max(n, 4), times: defaultTimes, ...opts,
+    });
+    if (!r.ok) throw new Error(`room:create failed: ${r.error}`);
+    for (const p of ps.slice(1)) {
+      const j = await emitAck(p.socket, 'room:join', { roomId: r.roomId });
+      if (!j.ok) throw new Error(`room:join failed: ${j.error}`);
+    }
+    return { roomId: r.roomId, ps, game: srv.rooms.get(r.roomId) };
+  }
+  async function startedRoom(n, opts) {
+    const room = await makeRoom(n, opts);
+    const res = await emitAck(room.ps[0].socket, 'game:start');
+    if (!res.ok) throw new Error(`game:start failed: ${res.error}`);
+    for (const p of room.ps) {
+      const a = await waitFor(p.socket, 'role:assigned');
+      p.role = a.role;
+      p.assigned = a;
+    }
+    return room;
+  }
+  return { player, makeRoom, startedRoom };
+}
+
+module.exports = {
+  startTestServer, register, newUser, connectSocket, waitFor, clearEvents, emitAck, sleep, harness,
+};

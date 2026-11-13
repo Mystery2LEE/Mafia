@@ -2,6 +2,22 @@ const EventEmitter = require('events');
 const crypto = require('crypto');
 const { roleCounts } = require('../config/game');
 
+const CHANNELS = ['public', 'mafia', 'dead', 'system'];
+const MAX_CHAT_LEN = 200;
+const HISTORY_CAP = 200;
+
+const PHASE_TEXT = {
+  role_reveal: () => '게임이 시작되었습니다. 자신의 직업을 확인하세요.',
+  night: (g) => `${g.day}일차 밤이 되었습니다.`,
+  morning: () => '아침이 밝았습니다.',
+  discussion: () => '낮 토론이 시작되었습니다.',
+  vote: () => '투표를 시작합니다. 처형할 사람을 지목하세요.',
+  defense: () => '최후 변론을 시작합니다.',
+  verdict: () => '찬반 투표를 시작합니다.',
+  execution: () => '처형이 집행됩니다.',
+};
+const KILL_TEXT = { left: '님이 게임에서 이탈했습니다.', mafia: '님이 밤사이 사망했습니다.', vote: '님이 처형되었습니다.' };
+
 /**
  * 방 1개 = Game 인스턴스 1개. 모든 상태는 인스턴스 안에만 둔다(모듈 전역 상태 금지).
  *
@@ -31,7 +47,11 @@ class Game extends EventEmitter {
     this.endsAt = null;
     this.timer = null;
     this.destroyed = false;
+    this.defendantId = null; // 최후 변론 대상 (투표 단계에서 채운다)
+    this.history = this._emptyHistory();
   }
+
+  _emptyHistory() { return { public: [], mafia: [], dead: [], system: [] }; }
 
   get hasPassword() { return !!this.passwordHash; }
   get isFull() { return this.players.size >= this.maxPlayers; }
@@ -43,6 +63,7 @@ class Game extends EventEmitter {
       id: user.id, nickname: user.nickname, connected: true,
       alive: true, left: false, role: null, team: null,
       stats: { policeHits: 0, doctorSaves: 0 },
+      chatTimes: [],
     };
   }
 
@@ -101,6 +122,8 @@ class Game extends EventEmitter {
     this._assignRoles();
     this.status = 'playing';
     this.day = 0;
+    this.defendantId = null;
+    this.history = this._emptyHistory();
     const mafiaTeam = this._mafiaList();
     for (const p of this.players.values()) {
       this.emit('toUser', p.id, 'role:assigned', {
@@ -151,6 +174,7 @@ class Game extends EventEmitter {
     this.timer.unref?.();
     this.emit('toRoom', 'phase:change', { phase, endsAt: this.endsAt, day: this.day });
     this.emit('room');
+    this._system(PHASE_TEXT[phase](this));
   }
 
   _startNight() {
@@ -200,7 +224,82 @@ class Game extends EventEmitter {
     if (!p || !p.alive) return;
     p.alive = false;
     this.emit('toRoom', 'player:killed', { id: userId, cause });
-    this.emit('room');
+    this.emit('room'); // 소켓 계층이 여기서 채널 소속을 다시 맞춘다 (사망자는 dead/mafia 채널 읽기 + 히스토리 수신)
+    this._system(`${p.nickname}${KILL_TEXT[cause] || '님이 사망했습니다.'}`);
+  }
+
+  // ---------- 채팅 (읽기/쓰기 권한은 모두 여기서 판정한다) ----------
+
+  /** 이 유저가 읽을 수 있는 채널. 소켓 계층은 이 목록대로 Socket.IO room에 넣고 뺀다. */
+  readChannels(userId) {
+    const p = this.players.get(userId);
+    if (!p || p.left) return [];
+    const ch = ['public', 'system'];
+    if (this.status === 'playing') {
+      if (p.role === 'mafia' || !p.alive) ch.push('mafia'); // 마피아 + 사망자
+      if (!p.alive) ch.push('dead'); // 사망자만
+    }
+    return ch;
+  }
+
+  /** 지금 이 유저가 해당 채널에 쓸 수 있는가 */
+  canWrite(userId, channel) {
+    const p = this.players.get(userId);
+    if (!p || p.left) return false;
+    if (this.status === 'waiting') return channel === 'public'; // 대기실에서는 전체 채팅만
+    switch (channel) {
+      case 'public':
+        if (!p.alive) return false;
+        if (this.phase === 'discussion' || this.phase === 'vote') return true;
+        if (this.phase === 'defense') return userId === this.defendantId; // 변론 중엔 지목자만
+        return false;
+      case 'mafia':
+        return p.alive && p.role === 'mafia' && this.phase === 'night';
+      case 'dead':
+        return !p.alive;
+      default: // system 은 서버만
+        return false;
+    }
+  }
+
+  chat(userId, channel, text) {
+    const p = this.players.get(userId);
+    if (!p || p.left) return { error: 'not_in_room' };
+    if (!CHANNELS.includes(channel)) return { error: 'invalid_channel' };
+    if (typeof text !== 'string') return { error: 'invalid_text' };
+    const clean = text.replace(/[\u0000-\u001f\u007f]/g, '').trim();
+    if (!clean || clean.length > MAX_CHAT_LEN) return { error: 'invalid_text' };
+    if (!this.canWrite(userId, channel)) return { error: 'forbidden' };
+
+    const { count, perMs } = this.limits.chatRate;
+    const now = Date.now();
+    p.chatTimes = p.chatTimes.filter((t) => now - t < perMs);
+    if (p.chatTimes.length >= count) return { error: 'rate_limited' };
+    p.chatTimes.push(now);
+
+    this._deliver(channel, { channel, from: { id: p.id, nickname: p.nickname }, text: clean, ts: now });
+    return { ok: true };
+  }
+
+  _system(text) {
+    this._deliver('system', { channel: 'system', from: null, text, ts: Date.now() });
+  }
+
+  _deliver(channel, msg) {
+    const h = this.history[channel];
+    h.push(msg);
+    if (h.length > HISTORY_CAP) h.shift();
+    this.emit('toChannel', channel, 'chat:message', msg);
+  }
+
+  historyOf(channel) { return this.history[channel] ?? []; }
+
+  /** 채널 목록과 쓰기 가능 여부 (클라이언트 UI 표시용 — 실제 권한은 chat()에서 다시 검증) */
+  chatStateFor(userId) {
+    return {
+      read: this.readChannels(userId),
+      write: ['public', 'mafia', 'dead'].filter((c) => this.canWrite(userId, c)),
+    };
   }
 
   /** 승리 조건을 확인하고, 충족되면 게임을 끝낸다. @returns {boolean} 종료 여부 */
@@ -225,6 +324,10 @@ class Game extends EventEmitter {
       id: p.id, nickname: p.nickname, role: p.role, team: p.team, alive: p.alive, left: p.left,
     }));
     this.emit('toRoom', 'game:over', { winner, roles });
+    this._system(`게임 종료! ${winner === 'mafia' ? '마피아' : '시민'} 팀이 승리했습니다.`);
+    this.history.mafia = [];
+    this.history.dead = [];
+    this.defendantId = null;
     this.emit('ended', {
       roomId: this.id, title: this.title, winner,
       players: [...this.players.values()].map((p) => ({
@@ -277,6 +380,7 @@ class Game extends EventEmitter {
       times: this.times,
       hostId: this.hostId,
       youId: userId,
+      chat: this.chatStateFor(userId),
       players: [...this.players.values()].map((p) => ({
         id: p.id,
         nickname: p.nickname,

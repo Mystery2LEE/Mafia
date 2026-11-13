@@ -81,6 +81,7 @@ class RoomManager extends EventEmitter {
     game.on('lobby', () => this.emit('lobby'));
     game.on('toRoom', (event, payload) => this.emit('toRoom', game.id, event, payload));
     game.on('toUser', (userId, event, payload) => this.emit('toUser', userId, event, payload));
+    game.on('toChannel', (channel, event, payload) => this.emit('toChannel', game.id, channel, event, payload));
     game.on('ended', (report) => this.emit('ended', report));
   }
 
