@@ -19,10 +19,10 @@ module.exports = {
   // 티어: min 이상 ~ 다음 티어 min 미만. 오름차순.
   tiers: [
     { key: 'thug', name: '똘마니', min: 0 },
-    { key: 'hoodlum', name: '건달', min: 1000 },
-    { key: 'enforcer', name: '행동대장', min: 1150 },
-    { key: 'capo', name: '간부', min: 1300 },
-    { key: 'boss', name: '보스', min: 1500 },
-    { key: 'godfather', name: '대부', min: 1750 },
+    { key: 'hoodlum', name: '건달', min: 1100 }, // 가입 시작 점수(1000)가 똘마니 구간에 들어오도록 기준을 잡았다
+    { key: 'enforcer', name: '행동대장', min: 1250 },
+    { key: 'capo', name: '간부', min: 1400 },
+    { key: 'boss', name: '보스', min: 1600 },
+    { key: 'godfather', name: '대부', min: 1800 },
   ],
 };
