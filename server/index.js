@@ -9,8 +9,10 @@ const { openDb } = require('./db');
 const { createJwt } = require('./auth/jwt');
 const { createAuthRouter, userFromCookieHeader } = require('./auth/routes');
 const { socketAuth } = require('./auth/socketAuth');
+const { RoomManager } = require('./lobby/RoomManager');
+const { registerSockets } = require('./sockets');
 
-function createServer({ dbPath, jwtSecret } = {}) {
+function createServer({ dbPath, jwtSecret, limits } = {}) {
   const secret = jwtSecret || process.env.JWT_SECRET;
   if (!secret) {
     console.warn('[경고] JWT_SECRET 이 없어 개발용 임시 키를 사용합니다. .env 를 설정하세요.');
@@ -35,14 +37,14 @@ function createServer({ dbPath, jwtSecret } = {}) {
   const io = new Server(server);
   io.use(socketAuth({ db, jwt }));
 
-  io.on('connection', (socket) => {
-    socket.emit('hello', { user: socket.data.user });
-  });
+  const rooms = new RoomManager({ limits });
+  registerSockets({ io, rooms });
 
   return {
-    app, server, io, db, jwt,
+    app, server, io, db, jwt, rooms,
     listen: (port) => new Promise((resolve) => server.listen(port, () => resolve(server.address().port))),
     close: () => new Promise((resolve) => {
+      rooms.shutdown();
       io.close(() => { db.close(); resolve(); });
     }),
   };
