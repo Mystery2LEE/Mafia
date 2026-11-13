@@ -10,7 +10,12 @@ const ERRORS = {
   invalid_max_players: '최대 인원은 4~12명입니다.',
   invalid_times: '페이즈 시간은 5~180초 사이로 입력하세요.',
   invalid_password: '비밀번호가 올바르지 않은 형식입니다.',
+  invalid_mafia_count: '마피아 수는 1명부터 최대 인원÷3(내림)명까지 고를 수 있습니다.',
 };
+
+// 서버(config/game.js)와 같은 규칙: 기본 4–5명 1 / 6–8명 2 / 9–12명 3, 상한은 인원÷3(내림, 최소 1)
+const defaultMafia = (n) => (n <= 5 ? 1 : n <= 8 ? 2 : 3);
+const maxMafia = (n) => Math.max(1, Math.floor(n / 3));
 const errText = (code) => ERRORS[code] || '요청에 실패했습니다.';
 
 let socket;
@@ -45,6 +50,7 @@ function renderRooms(rooms) {
     host.append(document.createTextNode(` ${r.hostNickname}`));
     const badge = el('span', `badge ${r.status}`, r.status === 'waiting' ? '대기중' : '게임중');
     meta.append(badge, seats, count, host);
+    if (r.mafiaCount != null) meta.append(el('span', 'badge custom', `마피아 ${r.mafiaCount}명 설정`));
     info.append(title, meta);
 
     const btn = el('button', 'btn-sm', r.status === 'waiting' ? '입장' : '진행 중');
@@ -76,6 +82,25 @@ function join(roomId, password, onError) {
   });
 }
 
+/** 최대 인원에 맞춰 마피아 수 선택지를 다시 채운다 (이미 고른 값이 범위 안이면 유지) */
+function fillMafiaOptions() {
+  const n = Math.min(12, Math.max(4, Number($('c-max').value) || 8));
+  const sel = $('c-mafia');
+  const prev = sel.value;
+  sel.replaceChildren();
+  const base = document.createElement('option');
+  base.value = '';
+  base.textContent = `기본 (${defaultMafia(n)}명, 랭킹 반영)`;
+  sel.append(base);
+  for (let i = 1; i <= maxMafia(n); i++) {
+    const o = document.createElement('option');
+    o.value = String(i);
+    o.textContent = i === defaultMafia(n) ? `${i}명 (기본과 같음)` : `${i}명 (랭킹 미반영)`;
+    sel.append(o);
+  }
+  if ([...sel.options].some((o) => o.value === prev)) sel.value = prev;
+}
+
 function numOrUndef(id) {
   const v = $(id).value.trim();
   return v === '' ? undefined : Number(v);
@@ -103,7 +128,9 @@ async function init() {
     location.href = '/login.html';
   };
 
-  $('open-create').onclick = () => { $('create-msg').textContent = ''; $('create-dialog').showModal(); };
+  fillMafiaOptions();
+  $('c-max').addEventListener('input', fillMafiaOptions);
+  $('open-create').onclick = () => { $('create-msg').textContent = ''; fillMafiaOptions(); $('create-dialog').showModal(); };
   document.querySelectorAll('[data-close]').forEach((b) => { b.onclick = () => b.closest('dialog').close(); });
 
   $('create-form').addEventListener('submit', (e) => {
@@ -118,6 +145,7 @@ async function init() {
       maxPlayers: Number($('c-max').value),
       password: $('c-pw').value || undefined,
       doctorSelfProtect: $('c-doctor').checked,
+      mafiaCount: $('c-mafia').value ? Number($('c-mafia').value) : undefined,
       times: Object.keys(times).length ? times : undefined,
     }, (res) => {
       if (res.ok) return (location.href = '/room.html');

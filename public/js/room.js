@@ -52,9 +52,10 @@ function render() {
   document.body.classList.toggle('night', phase === 'night');
   document.body.classList.toggle('ghost', playing && !!state.you && !state.you.alive); // 사망자 화면 채도 감소
   $('room-title').textContent = state.title;
+  const custom = state.mafiaCount != null ? ` · 마피아 ${state.mafiaCount}명 설정` : '';
   $('room-sub').textContent = playing
-    ? `${state.day}일차 · 생존 ${state.players.filter((p) => !p.left && p.alive).length}명`
-    : `대기실 · ${state.players.length}/${state.maxPlayers}명${state.hasPassword ? ' · 비밀방' : ''}`;
+    ? `${state.day}일차 · 생존 ${state.players.filter((p) => !p.left && p.alive).length}명${state.customRules ? ' · 랭킹 미반영' : ''}`
+    : `대기실 · ${state.players.length}/${state.maxPlayers}명${state.hasPassword ? ' · 비밀방' : ''}${custom}`;
   $('phase-label').textContent = playing ? (PHASE_NAMES[phase] || '') : '대기실';
   $('phase-ico').innerHTML = Icons.svg(PHASE_ICONS[playing ? phase : 'waiting'] || 'users', 20);
 
@@ -217,7 +218,11 @@ function renderActions() {
       })[you.role] || '밤입니다. 조용히 기다리세요.';
       break;
     case 'morning': msg.textContent = '아침이 밝았습니다.'; break;
-    case 'discussion': msg.textContent = '토론 시간입니다. 의심되는 사람을 찾아보세요.'; break;
+    case 'discussion':
+      msg.textContent = state.day === 1 && !state.firstDayVote
+        ? '첫날은 토론만 합니다. 처형 투표는 없고, 밤이 되면 능력이 시작됩니다.'
+        : '토론 시간입니다. 의심되는 사람을 찾아보세요.';
+      break;
     case 'vote': {
       msg.textContent = '처형할 사람을 선택하세요.';
       if (you.vote != null) {

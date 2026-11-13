@@ -106,6 +106,12 @@ input[type='text'], input[type='password'], input[type='number'], input:not([typ
   width: 100%; padding: 11px 12px; border-radius: 8px; border: 1px solid var(--line);
   background: rgba(7, 6, 10, 0.7); color: var(--ivory); font: inherit; transition: border-color 0.2s, box-shadow 0.2s;
 }
+select {
+  width: 100%; padding: 11px 12px; border-radius: 8px; border: 1px solid var(--line);
+  background: rgba(7, 6, 10, 0.7); color: var(--ivory); font: inherit;
+}
+select:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(212, 168, 67, 0.18); }
+.hint { margin: 6px 0 0; font-size: 12px; color: var(--muted); }
 input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(212, 168, 67, 0.18); }
 input::placeholder { color: #5f5870; }
 input:disabled { opacity: 0.5; }

@@ -1,0 +1,217 @@
+/* ===== 스킨 =====
+   html[data-skin="claude" | "mm"] 일 때만 적용된다. 속성이 없으면 기본(누아르) 스타일 그대로다.
+   색은 body(낮) / body.night(밤) 에서 --sk-* 변수로 정하고, 기존 토큰(--gold, --ivory 등)을 거기에 연결한다.
+   (토큰은 body 에서 다시 연결해야 밤/낮 전환 때 값이 따라 바뀐다) */
+
+/* ---------- Claude 스타일: 따뜻한 종이색 + 테라코타 ---------- */
+html[data-skin='claude'] body {
+  --sk-page: #f5f4ee; --sk-surface: #ffffff; --sk-surface-2: #faf9f5; --sk-input: #ffffff;
+  --sk-border: #e3e0d4; --sk-text: #1f1e1d; --sk-muted: #6b6a64; --sk-heading: #141413;
+  --sk-accent: #d97757; --sk-accent-hi: #c6613f; --sk-on-accent: #ffffff; --sk-ring: #d97757;
+  --sk-bar: #f5f4ee; --sk-bar-text: #1f1e1d; --sk-bar-border: #e3e0d4;
+  --sk-felt: radial-gradient(ellipse at 50% 40%, #f6f1e3 0%, #ece5d2 60%, #e2d9c2 100%);
+  --sk-felt-rim: #d97757; --sk-felt-text: #3d3929;
+  --sk-bubble: #f0eee6; --sk-bubble-mine: #f8e1d7;
+  --sk-ok-text: #2f6b49; --sk-bad-text: #b3392b;
+  --sk-radius: 14px; --sk-shadow: 0 1px 2px rgba(31, 30, 29, 0.06), 0 10px 28px rgba(31, 30, 29, 0.07);
+  --sk-font-body: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif;
+  --sk-font-display: 'Noto Serif KR', 'Batang', serif;
+}
+html[data-skin='claude'] body.night {
+  --sk-page: #262624; --sk-surface: #30302e; --sk-surface-2: #2a2a28; --sk-input: #262624;
+  --sk-border: #4a4944; --sk-text: #f0eee6; --sk-muted: #a6a39a; --sk-heading: #faf9f5;
+  --sk-accent: #d97757; --sk-accent-hi: #e58a6c; --sk-ring: #e58a6c;
+  --sk-bar: #262624; --sk-bar-text: #f0eee6; --sk-bar-border: #3d3c38;
+  --sk-felt: radial-gradient(ellipse at 50% 40%, #3b3a36 0%, #2f2e2b 60%, #242321 100%);
+  --sk-felt-rim: #d97757; --sk-felt-text: #eae7dc;
+  --sk-bubble: #3a3936; --sk-bubble-mine: #5a3a2e;
+  --sk-ok-text: #86d6a6; --sk-bad-text: #ff9f8f;
+  --sk-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+
+/* ---------- Mattermost 스타일: 네이비 상단 바 + 파란 포인트, 각진 모서리 ---------- */
+html[data-skin='mm'] body {
+  --sk-page: #f4f5f7; --sk-surface: #ffffff; --sk-surface-2: #f7f8fa; --sk-input: #ffffff;
+  --sk-border: #dcdee3; --sk-text: #3f4350; --sk-muted: #707887; --sk-heading: #1e325c;
+  --sk-accent: #1c58d9; --sk-accent-hi: #1a4fc2; --sk-on-accent: #ffffff; --sk-ring: #7fa8ff;
+  --sk-bar: #1e325c; --sk-bar-text: #ffffff; --sk-bar-border: #16264a;
+  --sk-felt: radial-gradient(ellipse at 50% 40%, #eaf0fd 0%, #d9e3f8 60%, #c8d6f1 100%);
+  --sk-felt-rim: #1c58d9; --sk-felt-text: #1e325c;
+  --sk-bubble: transparent; --sk-bubble-mine: #e8f0ff;
+  --sk-ok-text: #1e7a4a; --sk-bad-text: #c0392b;
+  --sk-radius: 4px; --sk-shadow: 0 2px 3px rgba(0, 0, 0, 0.08);
+  --sk-font-body: 'Open Sans', 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif;
+  --sk-font-display: 'Open Sans', 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif;
+}
+html[data-skin='mm'] body.night {
+  --sk-page: #16181d; --sk-surface: #212328; --sk-surface-2: #1b1d22; --sk-input: #16181d;
+  --sk-border: #3a3d45; --sk-text: #dddfe4; --sk-muted: #9399a6; --sk-heading: #ffffff;
+  --sk-accent: #3f85f5; --sk-accent-hi: #5a98f7; --sk-ring: #7fa8ff;
+  --sk-bar: #191b1f; --sk-bar-text: #ffffff; --sk-bar-border: #2c2f36;
+  --sk-felt: radial-gradient(ellipse at 50% 40%, #2b3652 0%, #212a42 60%, #181e30 100%);
+  --sk-felt-rim: #3f85f5; --sk-felt-text: #dbe4ff;
+  --sk-bubble: transparent; --sk-bubble-mine: #22304d;
+  --sk-ok-text: #86d6a6; --sk-bad-text: #ff9f8f;
+  --sk-shadow: 0 2px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* ---------- 공통: 기존 토큰을 스킨 변수에 연결 ---------- */
+html[data-skin] body {
+  --ivory: var(--sk-text); --muted: var(--sk-muted); --gold: var(--sk-accent); --gold-hi: var(--sk-heading);
+  --gold-lo: var(--sk-border); --line: var(--sk-border); --radius: var(--sk-radius);
+  --font-body: var(--sk-font-body); --font-display: var(--sk-font-display);
+  --crimson: #c0392b; --ok: #2f8f5b;
+  background: var(--sk-page); color: var(--sk-text); font-family: var(--font-body);
+  transition: background-color 0.6s, color 0.6s;
+}
+html[data-skin] .bg, html[data-skin] .vignette, html[data-skin] .lamp,
+html[data-skin] .login-bg, html[data-skin] .login-beam { display: none; } /* 도시 배경 그림은 스킨에서 숨긴다 */
+
+/* 표면(카드/패널) */
+html[data-skin] .panel, html[data-skin] .card, html[data-skin] dialog, html[data-skin] .room-item,
+html[data-skin] .pod, html[data-skin] .stat, html[data-skin] .hero, html[data-skin] .progress-wrap,
+html[data-skin] .role-row, html[data-skin] .dossier {
+  background: var(--sk-surface); border-color: var(--sk-border); box-shadow: var(--sk-shadow); color: var(--sk-text);
+}
+html[data-skin] .panel.deco::before, html[data-skin] .panel.deco::after { display: none; }
+html[data-skin] .table td { background: var(--sk-surface); }
+html[data-skin] .table tr.me td { background: var(--sk-bubble-mine); }
+html[data-skin] .pod.p1 { border-color: var(--sk-accent); box-shadow: var(--sk-shadow); }
+html[data-skin] .empty-note { border-color: var(--sk-border); }
+
+/* 입력/버튼 */
+html[data-skin] input[type='text'], html[data-skin] input[type='password'], html[data-skin] input[type='number'],
+html[data-skin] input:not([type]), html[data-skin] select {
+  background: var(--sk-input); color: var(--sk-text); border-color: var(--sk-border);
+}
+html[data-skin] input:focus, html[data-skin] select:focus {
+  border-color: var(--sk-accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--sk-accent) 25%, transparent);
+}
+html[data-skin] input::placeholder { color: var(--sk-muted); opacity: 0.7; }
+html[data-skin] .btn, html[data-skin] .btn-sm {
+  background: var(--sk-accent); color: var(--sk-on-accent); box-shadow: none; border-radius: calc(var(--sk-radius) - 3px);
+}
+html[data-skin] .btn:hover:not(:disabled), html[data-skin] .btn-sm:hover:not(:disabled) {
+  background: var(--sk-accent-hi); filter: none; transform: none;
+}
+html[data-skin] .btn-sm.ghost { background: transparent; color: var(--sk-text); border: 1px solid var(--sk-border); }
+html[data-skin] .btn-sm.ghost:hover:not(:disabled) { background: color-mix(in srgb, var(--sk-text) 7%, transparent); }
+html[data-skin] .btn-sm.agree { background: #2f8f5b; color: #fff; }
+html[data-skin] .btn-sm.disagree, html[data-skin] .btn-sm.danger { background: #c0392b; color: #fff; }
+html[data-skin] .tabs { border-bottom-color: var(--sk-border); }
+html[data-skin] .msg { color: var(--sk-bad-text); }
+html[data-skin] dialog::backdrop { background: rgba(20, 20, 19, 0.5); }
+
+/* 상단 바 */
+html[data-skin] .topbar, html[data-skin] .gamebar {
+  background: var(--sk-bar); color: var(--sk-bar-text); border-bottom: 1px solid var(--sk-bar-border); backdrop-filter: none;
+}
+html[data-skin] .topbar::after, html[data-skin] .gamebar::after { display: none; }
+html[data-skin] .brand, html[data-skin] .gb-title, html[data-skin] .topbar-me b, html[data-skin] .nav-links a,
+html[data-skin] .gb-timer span, html[data-skin] #me-rating, html[data-skin] .phase-ico { color: var(--sk-bar-text); }
+html[data-skin] .topbar-me, html[data-skin] .gb-sub, html[data-skin] .gb-opt { color: color-mix(in srgb, var(--sk-bar-text) 68%, transparent); }
+html[data-skin] .nav-links a:hover { background: color-mix(in srgb, var(--sk-bar-text) 12%, transparent); border-color: transparent; }
+html[data-skin] .nav-links a.current { border-color: color-mix(in srgb, var(--sk-bar-text) 45%, transparent); }
+html[data-skin] .gb-phase {
+  color: var(--sk-bar-text); background: transparent; border-color: color-mix(in srgb, var(--sk-bar-text) 35%, transparent);
+}
+html[data-skin] .gb-timer .trk { stroke: color-mix(in srgb, var(--sk-bar-text) 20%, transparent); }
+html[data-skin] .gb-timer .bar { stroke: var(--sk-ring); }
+html[data-skin] .gb-timer.low .bar { stroke: #e5584a; }
+html[data-skin] .topbar .btn-sm.ghost, html[data-skin] .gamebar .btn-sm.ghost {
+  color: var(--sk-bar-text); border-color: color-mix(in srgb, var(--sk-bar-text) 35%, transparent);
+}
+
+/* 로비/랭킹/프로필 */
+html[data-skin] .badge.waiting {
+  color: var(--sk-ok-text); background: color-mix(in srgb, var(--sk-ok-text) 12%, transparent);
+  border-color: color-mix(in srgb, var(--sk-ok-text) 40%, transparent);
+}
+html[data-skin] .badge.playing {
+  color: var(--sk-bad-text); background: color-mix(in srgb, var(--sk-bad-text) 12%, transparent);
+  border-color: color-mix(in srgb, var(--sk-bad-text) 40%, transparent);
+}
+html[data-skin] .badge.custom { color: var(--sk-accent); background: color-mix(in srgb, var(--sk-accent) 12%, transparent); border-color: color-mix(in srgb, var(--sk-accent) 40%, transparent); }
+html[data-skin] .chip.win { color: var(--sk-ok-text); background: color-mix(in srgb, var(--sk-ok-text) 14%, transparent); }
+html[data-skin] .chip.lose, html[data-skin] .chip.left { color: var(--sk-bad-text); background: color-mix(in srgb, var(--sk-bad-text) 14%, transparent); }
+html[data-skin] .pos { color: var(--sk-ok-text); }
+html[data-skin] .neg { color: var(--sk-bad-text); }
+html[data-skin] .progress > i { background: var(--sk-accent); }
+html[data-skin] .role-row .bar i { background: var(--sk-accent); }
+html[data-skin] .seats i { border-color: var(--sk-border); }
+html[data-skin] .seats i.on { background: var(--sk-accent); border-color: var(--sk-accent); box-shadow: none; }
+html[data-skin] .lobby-head h2, html[data-skin] .page h2, html[data-skin] .page h3.sec, html[data-skin] .stat b, html[data-skin] .pod .rt { color: var(--sk-heading); }
+
+/* 게임 화면 */
+html[data-skin] .felt {
+  background: var(--sk-felt); box-shadow: 0 0 0 4px var(--sk-felt-rim), 0 18px 40px rgba(0, 0, 0, 0.18);
+}
+html[data-skin] .felt::after { border-color: color-mix(in srgb, var(--sk-felt-text) 30%, transparent); }
+html[data-skin] .center-msg { color: var(--sk-felt-text); text-shadow: none; }
+html[data-skin] .plate { background: var(--sk-surface); border-color: var(--sk-border); color: var(--sk-text); box-shadow: none; }
+html[data-skin] .plate .ico { color: var(--sk-accent); }
+html[data-skin] .avatar { background: var(--sk-accent); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
+html[data-skin] .pcard.me .avatar { background: var(--sk-heading); box-shadow: 0 0 0 3px color-mix(in srgb, var(--sk-accent) 55%, transparent); }
+html[data-skin] .pcard.selectable:hover .avatar { background: var(--sk-accent-hi); }
+html[data-skin] .pcard.selected .avatar { background: #c0392b; box-shadow: 0 0 0 4px rgba(192, 57, 43, 0.35); }
+html[data-skin] .pcard.defendant .avatar { background: #e0a82e; box-shadow: 0 0 0 4px rgba(224, 168, 46, 0.4); }
+html[data-skin] .ptag { color: color-mix(in srgb, var(--sk-felt-text) 80%, transparent); text-shadow: none; }
+html[data-skin] .ptag.mafia { color: var(--sk-bad-text); }
+html[data-skin] .ptag.role { color: var(--sk-accent); }
+html[data-skin] .votebar { background: color-mix(in srgb, var(--sk-felt-text) 18%, transparent); }
+html[data-skin] .dossier-tag { color: var(--sk-accent); }
+html[data-skin] .role-name { color: var(--sk-heading); }
+html[data-skin] .role-mates { color: var(--sk-bad-text); }
+html[data-skin] .role-front { background: color-mix(in srgb, var(--sk-accent) 14%, var(--sk-surface)); border-color: var(--sk-accent); color: var(--sk-accent); }
+html[data-skin] .over-roles .side.front { background: color-mix(in srgb, var(--sk-accent) 14%, var(--sk-surface)); border-color: var(--sk-accent); color: var(--sk-accent); }
+html[data-skin] .over-card h2 { color: var(--sk-heading); text-shadow: none; }
+html[data-skin] .over-card.win-mafia h2 { color: var(--sk-bad-text); }
+html[data-skin] .over-kicker { color: var(--sk-accent); }
+html[data-skin] .overlay { background: rgba(20, 20, 19, 0.55); }
+html[data-skin] .rating-line { color: var(--sk-text); }
+
+/* 채팅 */
+html[data-skin] .chat-tabs { border-bottom-color: var(--sk-border); }
+html[data-skin] .chat-tabs button.active { color: var(--sk-heading); }
+html[data-skin] .chat-tabs button.active::after { background: var(--sk-accent); }
+html[data-skin] .chat-log .body { background: var(--sk-bubble); color: var(--sk-text); }
+html[data-skin] .chat-log li.mine .body { background: var(--sk-bubble-mine); }
+html[data-skin] .chat-log .from { color: var(--sk-heading); }
+html[data-skin] .chat-log li.sys::before { background: linear-gradient(90deg, transparent, var(--sk-border)); }
+html[data-skin] .chat-log li.sys::after { background: linear-gradient(270deg, transparent, var(--sk-border)); }
+html[data-skin] .chat-form { background: var(--sk-surface-2); border-top-color: var(--sk-border); }
+
+/* 연출 레이어: 어두운 띠 위에 올라가므로 글자는 밝게 */
+html[data-skin] .fx .banner, html[data-skin] .fx .exec-name, html[data-skin] .fx .flipcard .cap, html[data-skin] .fx .gavel { color: #fff; }
+html[data-skin] .fx .banner .ico { color: var(--sk-ring); }
+html[data-skin] .fx .exec-name { background: #1f1e1d; border-color: var(--sk-accent); }
+html[data-skin] .fx .exec-portrait { border-color: var(--sk-accent); }
+
+/* ---------- 스킨별 개성 ---------- */
+/* Mattermost: 말풍선 대신 채널 메시지처럼 평평하게, 아바타는 둥근 사각형 */
+html[data-skin='mm'] .chat-log .body { padding: 2px 0; border-radius: 0; }
+html[data-skin='mm'] .chat-log li, html[data-skin='mm'] .chat-log li.mine { max-width: 100%; margin-left: 0; text-align: left; }
+html[data-skin='mm'] .chat-log li.mine .body { background: var(--sk-bubble-mine); padding: 2px 8px; border-radius: 4px; }
+html[data-skin='mm'] .avatar, html[data-skin='mm'] .avatar .portrait { border-radius: 10px; }
+html[data-skin='mm'] .plate, html[data-skin='mm'] .gb-phase, html[data-skin='mm'] .badge, html[data-skin='mm'] .chip { border-radius: 4px; }
+html[data-skin='mm'] .brand { letter-spacing: 0.08em; }
+html[data-skin='mm'] .gb-title, html[data-skin='mm'] .over-card h2, html[data-skin='mm'] .card h1 { letter-spacing: 0; }
+/* Claude: 부드러운 큰 모서리 */
+html[data-skin='claude'] .plate { border-radius: 8px; }
+html[data-skin='claude'] .gb-phase { border-radius: 99px; }
+
+/* ---------- 스킨 선택기 ---------- */
+.skin-pick {
+  display: inline-flex; align-items: center; gap: 6px; margin: 0; color: inherit; font-size: 12px; cursor: pointer;
+}
+.skin-pick select {
+  width: auto; padding: 5px 8px; font-size: 12px; border-radius: 6px; cursor: pointer;
+  background: rgba(255, 255, 255, 0.06); color: inherit; border: 1px solid rgba(255, 255, 255, 0.18);
+}
+.skin-pick select option { color: #1f1e1d; background: #fff; }
+.skin-pick.floating { position: fixed; top: 12px; right: 14px; z-index: 30; color: var(--ivory); }
+html[data-skin] .topbar .skin-pick select, html[data-skin] .gamebar .skin-pick select {
+  background: color-mix(in srgb, var(--sk-bar-text) 8%, transparent); border-color: color-mix(in srgb, var(--sk-bar-text) 30%, transparent); color: var(--sk-bar-text);
+}
+html[data-skin] .skin-pick.floating select { background: var(--sk-input); border-color: var(--sk-border); color: var(--sk-text); }
+html[data-skin] .skin-pick.floating { color: var(--sk-text); }

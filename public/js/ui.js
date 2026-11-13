@@ -31,7 +31,8 @@
     list: '<path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/>',
     user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
     wifiOff: '<path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M3 3l18 18"/>',
-    dagger: '<path d="M20 4L10 14"/><path d="M13 17l-6-6 2.5-2.5 6 6L13 17z"/><path d="M7 17l-4 4"/>',
+    palette: '<path d="M12 3a9 9 0 1 0 0 18c1.2 0 2-.8 2-1.8 0-.5-.2-.9-.5-1.2-.3-.3-.5-.7-.5-1.2 0-1 .8-1.8 1.8-1.8H17a4 4 0 0 0 4-4c0-4.4-4-8-9-8z"/><circle cx="7.5" cy="11" r="1" fill="currentColor"/><circle cx="10.5" cy="7" r="1" fill="currentColor"/><circle cx="15" cy="7.5" r="1" fill="currentColor"/>',
+    dagger:'<path d="M20 4L10 14"/><path d="M13 17l-6-6 2.5-2.5 6 6L13 17z"/><path d="M7 17l-4 4"/>',
   };
 
   /** SVG 문자열 */

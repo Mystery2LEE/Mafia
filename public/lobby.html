@@ -10,6 +10,8 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/lobby.css">
+  <link rel="stylesheet" href="/css/skins.css">
+  <script src="/js/skin.js"></script>
 </head>
 <body>
   <header class="topbar">
@@ -48,6 +50,9 @@
       <input id="c-title" maxlength="30" required placeholder="예) 초보 환영">
       <label for="c-max">최대 인원 (4~12)</label>
       <input id="c-max" type="number" min="4" max="12" value="8" required>
+      <label for="c-mafia">마피아 수</label>
+      <select id="c-mafia"></select>
+      <p class="hint">기본값이 아닌 마피아 수로 진행한 판은 랭킹에 반영되지 않습니다.</p>
       <label for="c-pw">비밀번호 (선택)</label>
       <input id="c-pw" type="password" maxlength="20" autocomplete="off" placeholder="비워 두면 공개 방">
       <label class="check"><input id="c-doctor" type="checkbox" checked> 의사 자기 보호 허용</label>

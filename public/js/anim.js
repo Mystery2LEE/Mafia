@@ -257,8 +257,31 @@
       }, 60);
     },
 
+    // 동점 / 투표 없음: 이번 투표는 넘어간다는 것을 화면 가운데에 분명히 알린다
+    notice(iconName, title, sub, ms = 4200) {
+      const n = layer('notice');
+      n.innerHTML = `${Icons.svg(iconName, 30)}<div><b></b><span></span></div>`;
+      n.querySelector('b').textContent = title;
+      n.querySelector('span').textContent = sub;
+      return play(n, [
+        { opacity: 0, transform: 'translate(-50%, -40%) scale(0.94)' },
+        { opacity: 1, transform: 'translate(-50%, -50%) scale(1)', offset: 0.12 },
+        { opacity: 1, transform: 'translate(-50%, -50%) scale(1)', offset: 0.85 },
+        { opacity: 0, transform: 'translate(-50%, -50%) scale(1)' },
+      ], { duration: reduced() ? Math.min(ms, 2400) : ms, easing: 'ease-out' }).then(() => n.remove());
+    },
+
     voteResult(r) {
-      if (r.defendantId == null || reduced()) return;
+      if (r.defendantId == null) {
+        if (r.reason === 'tie') {
+          Anim.notice('scales', '동점입니다',
+            `${(r.tied || []).map((t) => `${t.nickname} ${t.votes}표`).join(' · ')} — 이번 투표는 넘어갑니다`);
+        } else if (r.reason === 'no_votes') {
+          Anim.notice('ballot', '투표가 없었습니다', '이번 투표는 넘어갑니다');
+        }
+        return;
+      }
+      if (reduced()) return;
       setTimeout(() => {
         const c = card(r.defendantId);
         if (c) shake(c, 600, 8);
@@ -305,8 +328,11 @@
       if (!r.counted) {
         const note = document.createElement('div');
         note.className = 'rating-break';
-        note.textContent = r.reason === 'too_few_players'
-          ? '인원이 부족해 랭킹에 반영되지 않았습니다.' : '이탈자가 많아 랭킹에 반영되지 않았습니다.';
+        note.textContent = ({
+          too_few_players: '인원이 부족해 랭킹에 반영되지 않았습니다.',
+          too_many_leavers: '이탈자가 많아 랭킹에 반영되지 않았습니다.',
+          custom_rules: '마피아 수를 직접 정한 판이라 랭킹에 반영되지 않았습니다.',
+        })[r.reason] || '이 판은 랭킹에 반영되지 않았습니다.';
         box.append(note);
       }
       if (r.breakdown.length) {
