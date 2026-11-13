@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>마피아 - 로비</title>
+  <link rel="stylesheet" href="/css/base.css">
+</head>
+<body>
+  <main class="card">
+    <h1>로비</h1>
+    <p id="me" style="text-align:center;color:var(--muted)"></p>
+    <button class="btn" id="logout" type="button">로그아웃</button>
+  </main>
+  <script src="/js/api.js"></script>
+  <script>
+    requireLogin().then((u) => {
+      document.getElementById('me').textContent = `${u.nickname} (레이팅 ${u.rating})`;
+    });
+    document.getElementById('logout').onclick = async () => {
+      await api('/api/auth/logout', {});
+      location.href = '/login.html';
+    };
+  </script>
+</body>
+</html>

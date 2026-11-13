@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>마피아 - 로그인</title>
+  <link rel="stylesheet" href="/css/base.css">
+</head>
+<body>
+  <main class="card">
+    <img class="logo" src="/img/logo.svg" alt="마피아">
+    <div class="tabs">
+      <button type="button" id="tab-login" class="active">로그인</button>
+      <button type="button" id="tab-register">회원가입</button>
+    </div>
+    <form id="form" autocomplete="on">
+      <label for="username">아이디</label>
+      <input id="username" name="username" autocomplete="username" required>
+      <label for="password">비밀번호</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+      <div id="nick-row" class="hidden">
+        <label for="nickname">닉네임</label>
+        <input id="nickname" name="nickname" autocomplete="nickname">
+      </div>
+      <button class="btn" id="submit" type="submit">로그인</button>
+      <div class="msg" id="msg" role="alert"></div>
+    </form>
+  </main>
+  <script src="/js/api.js"></script>
+  <script src="/js/login.js"></script>
+</body>
+</html>
