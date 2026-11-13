@@ -306,5 +306,5 @@ body.night .felt { background: radial-gradient(ellipse at 50% 40%, #153a42 0%, #
 }
 
 /* 이름표: 티어 문장이 들어가도 닉네임이 덜 잘리도록 좌석 폭보다 넓게 허용 (가운데 정렬 유지) */
-.pcard .plate { width: max-content; max-width: 138px; position: relative; left: 50%; transform: translateX(-50%); }
+.pcard .plate { width: max-content; max-width: 138px; margin: 0; position: relative; left: 50%; transform: translateX(-50%); }
 @media (max-width: 640px) { .pcard .plate { max-width: 108px; } }
