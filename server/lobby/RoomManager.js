@@ -59,6 +59,9 @@ class RoomManager extends EventEmitter {
       return { error: 'invalid_password' };
     const normTimes = this._normalizeTimes(times);
     if (!normTimes) return { error: 'invalid_times' };
+    const doctorSelfProtect = opts.doctorSelfProtect;
+    if (doctorSelfProtect !== undefined && typeof doctorSelfProtect !== 'boolean')
+      return { error: 'invalid_options' };
 
     const passwordHash = password ? await bcrypt.hash(password, 8) : null;
     // await 도중에 다른 방에 들어갔을 수 있으므로 다시 확인
@@ -66,6 +69,7 @@ class RoomManager extends EventEmitter {
 
     const game = new Game({
       id: this._newId(), title: t, maxPlayers, passwordHash, times: normTimes, limits: this.limits,
+      options: doctorSelfProtect === undefined ? {} : { doctorSelfProtect },
     });
     this._wire(game);
     game.addPlayer(user);

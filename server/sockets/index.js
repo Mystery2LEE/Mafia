@@ -106,6 +106,20 @@ function registerSockets({ io, rooms }) {
       reply(ack, g.start(user.id));
     });
 
+    // 밤 능력 / 투표 / 찬반: 모든 판정은 Game 이 한다. 소켓 계층은 전달만 한다.
+    const gameAct = (fn) => (payload, ack) => {
+      const g = rooms.getRoomOf(user.id);
+      if (!g) return reply(ack, { error: 'not_in_room' });
+      reply(ack, fn(g, payload || {}));
+    };
+    const asId = (v) => (Number.isInteger(v) ? v : null);
+    socket.on('night:action', gameAct((g, { targetId }) =>
+      asId(targetId) === null ? { error: 'invalid_target' } : g.nightAction(user.id, targetId)));
+    socket.on('vote:cast', gameAct((g, { targetId }) =>
+      targetId === null ? g.castVote(user.id, null)
+        : asId(targetId) === null ? { error: 'invalid_target' } : g.castVote(user.id, targetId)));
+    socket.on('verdict:cast', gameAct((g, { agree }) => g.castVerdict(user.id, agree)));
+
     // 발신 권한은 서버(Game.chat)가 매번 검증한다. 클라이언트가 보내는 channel 값은 신뢰하지 않는다.
     socket.on('chat:send', (payload, ack) => {
       const g = rooms.getRoomOf(user.id);

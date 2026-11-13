@@ -29,7 +29,7 @@ const KILL_TEXT = { left: '님이 게임에서 이탈했습니다.', mafia: '님
  *   'ended'  (report)           게임 종료 보고(점수 반영용)
  */
 class Game extends EventEmitter {
-  constructor({ id, title, maxPlayers, passwordHash = null, times, limits }) {
+  constructor({ id, title, maxPlayers, passwordHash = null, times, limits, options }) {
     super();
     this.id = id;
     this.title = title;
@@ -47,9 +47,18 @@ class Game extends EventEmitter {
     this.endsAt = null;
     this.timer = null;
     this.destroyed = false;
-    this.defendantId = null; // 최후 변론 대상 (투표 단계에서 채운다)
+    this.defendantId = null; // 최후 변론 대상
     this.history = this._emptyHistory();
+    this.options = { ...limits.options, ...options };
+
+    // 라운드별 임시 상태 (매 밤/투표마다 초기화)
+    this.nightActs = this._emptyNight();
+    this.ballots = new Map(); // voterId -> targetId (낮 투표)
+    this.verdicts = new Map(); // voterId -> boolean (찬반)
+    this.policeLog = []; // 경찰에게만 보이는 누적 조사 결과
   }
+
+  _emptyNight() { return { mafia: new Map(), doctor: null, police: null }; }
 
   _emptyHistory() { return { public: [], mafia: [], dead: [], system: [] }; }
 
@@ -63,6 +72,7 @@ class Game extends EventEmitter {
       id: user.id, nickname: user.nickname, connected: true,
       alive: true, left: false, role: null, team: null,
       stats: { policeHits: 0, doctorSaves: 0 },
+      executed: false, // 투표로 처형되었는가 (점수 계산용)
       chatTimes: [],
     };
   }
@@ -124,6 +134,10 @@ class Game extends EventEmitter {
     this.day = 0;
     this.defendantId = null;
     this.history = this._emptyHistory();
+    this.policeLog = [];
+    this.nightActs = this._emptyNight();
+    this.ballots.clear();
+    this.verdicts.clear();
     const mafiaTeam = this._mafiaList();
     for (const p of this.players.values()) {
       this.emit('toUser', p.id, 'role:assigned', {
@@ -151,6 +165,7 @@ class Game extends EventEmitter {
       p.role = roles[i++];
       p.team = p.role === 'mafia' ? 'mafia' : 'citizen';
       p.alive = true;
+      p.executed = false;
       p.stats = { policeHits: 0, doctorSaves: 0 };
     }
   }
@@ -179,6 +194,8 @@ class Game extends EventEmitter {
 
   _startNight() {
     this.day += 1;
+    this.nightActs = this._emptyNight();
+    this.defendantId = null;
     this._enter('night', this.times.night);
   }
 
@@ -188,19 +205,23 @@ class Game extends EventEmitter {
     switch (this.phase) {
       case 'role_reveal':
         return this._startNight();
-      case 'night':
-        this._resolveNight();
-        return this._enter('morning', fixed.morning);
+      case 'night': {
+        const result = this._resolveNight();
+        this._enter('morning', fixed.morning);
+        return this._announceNight(result); // 사망/세이브는 아침 화면에서 공개한다
+      }
       case 'morning':
         if (this._checkWin()) return;
         return this._enter('discussion', this.times.discussion);
       case 'discussion':
+        this.ballots.clear();
+        this.emit('toRoom', 'vote:update', { tally: {} });
         return this._enter('vote', this.times.vote);
       case 'vote':
-        return this._resolveVote()
-          ? this._enter('defense', this.times.defense)
-          : this._startNight();
+        if (!this._resolveVote()) return this._startNight();
+        return this._enter('defense', this.times.defense);
       case 'defense':
+        this.verdicts.clear();
         return this._enter('verdict', this.times.verdict);
       case 'verdict':
         return this._resolveVerdict()
@@ -212,10 +233,193 @@ class Game extends EventEmitter {
     }
   }
 
-  // 아래 세 가지는 다음 단계(밤 능력 / 투표)에서 실제 판정을 채운다.
-  _resolveNight() {}
-  _resolveVote() { return false; } // 최후 변론 대상이 있으면 true
-  _resolveVerdict() { return false; } // 처형이 있으면 true
+  // ---------- 밤 능력 ----------
+
+  _isAlive(id) { const p = this.players.get(id); return !!p && p.alive && !p.left; }
+
+  /** 밤 능력 사용: 마피아=지목 살해 / 의사=보호 / 경찰=조사. 밤이 끝나기 전까지는 마지막 선택이 유효하다. */
+  nightAction(userId, targetId) {
+    const me = this.players.get(userId);
+    if (!me || me.left || !me.alive || this.status !== 'playing') return { error: 'forbidden' };
+    if (this.phase !== 'night') return { error: 'wrong_phase' };
+    if (!['mafia', 'doctor', 'police'].includes(me.role)) return { error: 'no_ability' };
+    if (!this._isAlive(targetId)) return { error: 'invalid_target' };
+    const target = this.players.get(targetId);
+
+    if (me.role === 'mafia') {
+      if (target.team === 'mafia') return { error: 'invalid_target' }; // 동료는 지목 불가
+      this.nightActs.mafia.set(userId, targetId);
+      this._sendMafiaPicks();
+    } else if (me.role === 'doctor') {
+      if (targetId === userId && !this.options.doctorSelfProtect) return { error: 'invalid_target' };
+      this.nightActs.doctor = targetId;
+    } else {
+      if (targetId === userId) return { error: 'invalid_target' };
+      this.nightActs.police = targetId;
+    }
+    return { ok: true };
+  }
+
+  _sendMafiaPicks() {
+    const picks = Object.fromEntries(this.nightActs.mafia);
+    for (const p of this.players.values()) {
+      if (p.role === 'mafia' && !p.left) this.emit('toUser', p.id, 'mafia:picks', { picks });
+    }
+  }
+
+  /** 밤 종료 시 판정. 결과만 계산하고, 공개(사망/세이브/조사 결과 전송)는 _announceNight 에서 한다. */
+  _resolveNight() {
+    const { mafia, doctor, police } = this.nightActs;
+
+    // 마피아 다수결. 동률이면 동률 후보 중 무작위, 아무도 지목하지 않았으면 킬 없음
+    const votes = new Map();
+    for (const [mafiaId, t] of mafia) {
+      if (!this._isAlive(mafiaId) || !this._isAlive(t)) continue;
+      votes.set(t, (votes.get(t) || 0) + 1);
+    }
+    let targetId = null;
+    if (votes.size) {
+      const top = Math.max(...votes.values());
+      const cands = [...votes].filter(([, n]) => n === top).map(([id]) => id);
+      targetId = cands[crypto.randomInt(cands.length)];
+    }
+
+    const saved = targetId !== null && doctor === targetId && this._isAlive(doctor);
+    if (saved) {
+      const doc = [...this.players.values()].find((p) => p.role === 'doctor' && p.alive);
+      if (doc) doc.stats.doctorSaves += 1;
+    }
+
+    let policeResult = null;
+    const cop = [...this.players.values()].find((p) => p.role === 'police' && p.alive && !p.left);
+    if (cop && police !== null && this._isAlive(police)) {
+      const isMafia = this.players.get(police).role === 'mafia';
+      if (isMafia) cop.stats.policeHits += 1;
+      policeResult = { copId: cop.id, targetId: police, isMafia };
+      this.policeLog.push({ targetId: police, isMafia, day: this.day });
+    }
+
+    return { killedId: saved ? null : targetId, saved, policeResult };
+  }
+
+  _announceNight({ killedId, saved, policeResult }) {
+    if (policeResult) {
+      this.emit('toUser', policeResult.copId, 'police:result',
+        { targetId: policeResult.targetId, isMafia: policeResult.isMafia });
+    }
+    if (saved) {
+      this.emit('toRoom', 'night:saved', {});
+      this._system('누군가 살아남았습니다.');
+    } else if (killedId !== null) {
+      this._kill(killedId, 'mafia');
+    } else {
+      this._system('평화로운 밤이었습니다.');
+    }
+  }
+
+  // ---------- 낮 투표 / 최후 변론 / 찬반 투표 ----------
+
+  /** 유효한 표만 집계 (생존 투표자 → 생존 대상) */
+  _tally() {
+    const tally = {};
+    for (const [voter, t] of this.ballots) {
+      if (!this._isAlive(voter) || !this._isAlive(t)) continue;
+      tally[t] = (tally[t] || 0) + 1;
+    }
+    return tally;
+  }
+
+  _aliveCount() {
+    let n = 0;
+    for (const p of this.players.values()) if (p.alive && !p.left) n++;
+    return n;
+  }
+
+  /** targetId === null 이면 투표 취소. 모든 생존자가 투표하면 투표 단계를 일찍 끝낸다. */
+  castVote(userId, targetId) {
+    const me = this.players.get(userId);
+    if (!me || me.left || !me.alive || this.status !== 'playing') return { error: 'forbidden' };
+    if (this.phase !== 'vote') return { error: 'wrong_phase' };
+    if (targetId === null) {
+      this.ballots.delete(userId);
+    } else {
+      if (!this._isAlive(targetId)) return { error: 'invalid_target' };
+      this.ballots.set(userId, targetId);
+    }
+    this.emit('toRoom', 'vote:update', { tally: this._tally() });
+    this.emit('room'); // 본인의 투표 상태 갱신
+    if (targetId !== null && this._validBallotCount() >= this._aliveCount()) this._advance();
+    return { ok: true };
+  }
+
+  _validBallotCount() {
+    let n = 0;
+    for (const [voter, t] of this.ballots) if (this._isAlive(voter) && this._isAlive(t)) n++;
+    return n;
+  }
+
+  /** 최다 득표 단독자가 최후 변론 대상. 동률이거나 무투표면 처형 없이 밤으로. @returns {boolean} 변론 대상 존재 */
+  _resolveVote() {
+    const tally = this._tally();
+    const entries = Object.entries(tally).map(([id, n]) => [Number(id), n]);
+    let defendant = null;
+    if (entries.length) {
+      const top = Math.max(...entries.map(([, n]) => n));
+      const leaders = entries.filter(([, n]) => n === top);
+      if (leaders.length === 1) defendant = leaders[0][0];
+    }
+    this.defendantId = defendant;
+    this.emit('toRoom', 'vote:result', { defendantId: defendant, tally });
+    if (defendant === null) {
+      this._system('동률이거나 투표가 없어 아무도 처형되지 않습니다.');
+      return false;
+    }
+    this._system(`${this.players.get(defendant).nickname}님이 최후 변론 대상으로 지목되었습니다.`);
+    return true;
+  }
+
+  castVerdict(userId, agree) {
+    const me = this.players.get(userId);
+    if (!me || me.left || !me.alive || this.status !== 'playing') return { error: 'forbidden' };
+    if (this.phase !== 'verdict') return { error: 'wrong_phase' };
+    if (userId === this.defendantId) return { error: 'forbidden' }; // 지목된 본인은 투표 불가
+    if (typeof agree !== 'boolean') return { error: 'invalid_vote' };
+    this.verdicts.set(userId, agree);
+    this.emit('room');
+    if (this._verdictVoterCount() >= this._aliveCount() - 1) this._advance();
+    return { ok: true };
+  }
+
+  _verdictVoterCount() {
+    let n = 0;
+    for (const voter of this.verdicts.keys()) if (this._isAlive(voter) && voter !== this.defendantId) n++;
+    return n;
+  }
+
+  /** 찬성이 (본인 제외 생존자의 절반)을 넘으면 처형. 기권은 반대로 계산. @returns {boolean} 처형 여부 */
+  _resolveVerdict() {
+    const defendant = this.defendantId;
+    if (defendant === null || !this._isAlive(defendant)) {
+      this.defendantId = null;
+      return false;
+    }
+    const eligible = this._aliveCount() - 1;
+    let agree = 0;
+    let disagree = 0;
+    for (const [voter, v] of this.verdicts) {
+      if (!this._isAlive(voter) || voter === defendant) continue;
+      if (v) agree++; else disagree++;
+    }
+    const executed = agree > eligible / 2;
+    this.emit('toRoom', 'verdict:result', { defendantId: defendant, executed, agree, disagree });
+    if (!executed) {
+      this._system('찬성이 과반이 되지 않아 처형하지 않습니다.');
+      this.defendantId = null;
+      return false;
+    }
+    this._kill(defendant, 'vote');
+    return true;
+  }
 
   // ---------- 사망 / 승리 판정 ----------
 
@@ -223,7 +427,10 @@ class Game extends EventEmitter {
     const p = this.players.get(userId);
     if (!p || !p.alive) return;
     p.alive = false;
-    this.emit('toRoom', 'player:killed', { id: userId, cause });
+    if (cause === 'vote') p.executed = true;
+    // 직업은 투표 처형일 때만 공개한다 (마피아 킬/이탈은 비공개)
+    this.emit('toRoom', 'player:killed',
+      { id: userId, cause, role: cause === 'vote' ? p.role : undefined });
     this.emit('room'); // 소켓 계층이 여기서 채널 소속을 다시 맞춘다 (사망자는 dead/mafia 채널 읽기 + 히스토리 수신)
     this._system(`${p.nickname}${KILL_TEXT[cause] || '님이 사망했습니다.'}`);
   }
@@ -331,15 +538,20 @@ class Game extends EventEmitter {
     this.emit('ended', {
       roomId: this.id, title: this.title, winner,
       players: [...this.players.values()].map((p) => ({
-        id: p.id, role: p.role, team: p.team, alive: p.alive, left: p.left, stats: { ...p.stats },
+        id: p.id, role: p.role, team: p.team, alive: p.alive, left: p.left,
+        executed: p.executed, stats: { ...p.stats },
       })),
     });
 
     // 대기실로 복귀: 이탈자는 정리하고 나머지는 직업 초기화
     for (const [id, p] of this.players) {
       if (p.left) this.players.delete(id);
-      else Object.assign(p, { role: null, team: null, alive: true });
+      else Object.assign(p, { role: null, team: null, alive: true, executed: false });
     }
+    this.nightActs = this._emptyNight();
+    this.ballots.clear();
+    this.verdicts.clear();
+    this.policeLog = [];
     this.status = 'waiting';
     this.phase = null;
     this.endsAt = null;
@@ -394,13 +606,28 @@ class Game extends EventEmitter {
       state.phase = this.phase;
       state.day = this.day;
       state.endsAt = this.endsAt;
+      if (['defense', 'verdict', 'execution'].includes(this.phase)) state.defendantId = this.defendantId;
+      if (this.phase === 'vote') state.tally = this._tally();
       state.you = {
         role: me.role,
         alive: me.alive,
         mafiaTeam: me.role === 'mafia' ? this._mafiaList() : undefined,
+        // 아래는 모두 본인 선택/본인 직업 결과만 (재접속 시 UI 복구용)
+        nightTarget: this.phase === 'night' ? this._myNightTarget(me) : undefined,
+        mafiaPicks: me.role === 'mafia' && this.phase === 'night' ? Object.fromEntries(this.nightActs.mafia) : undefined,
+        policeLog: me.role === 'police' ? this.policeLog : undefined,
+        vote: this.phase === 'vote' ? (this.ballots.get(userId) ?? null) : undefined,
+        verdict: this.phase === 'verdict' ? (this.verdicts.get(userId) ?? null) : undefined,
       };
     }
     return state;
+  }
+
+  _myNightTarget(p) {
+    if (p.role === 'mafia') return this.nightActs.mafia.get(p.id) ?? null;
+    if (p.role === 'doctor') return this.nightActs.doctor;
+    if (p.role === 'police') return this.nightActs.police;
+    return undefined;
   }
 
   destroy() {

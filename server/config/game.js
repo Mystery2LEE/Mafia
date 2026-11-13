@@ -15,6 +15,8 @@ module.exports = {
     secondMs: 1000,
     // 채팅 도배 방지: perMs 동안 count개까지
     chatRate: { count: 5, perMs: 3000 },
+    // 방 생성 시 바꿀 수 있는 게임 옵션의 기본값
+    options: { doctorSelfProtect: true },
   },
   // 페이즈 기본 시간(초)
   defaultTimes: { night: 30, discussion: 90, vote: 30, defense: 20, verdict: 15 },
