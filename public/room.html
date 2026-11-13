@@ -4,10 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>마피아 - 게임방</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="/css/base.css">
-  <link rel="stylesheet" href="/css/lobby.css">
   <link rel="stylesheet" href="/css/game.css">
-  <link rel="stylesheet" href="/css/stats.css">
   <link rel="stylesheet" href="/css/anim.css">
 </head>
 <body class="day">
@@ -16,48 +18,73 @@
   <div class="vignette"></div>
 
   <header class="gamebar">
-    <img src="/img/logo.svg" alt="마피아" class="topbar-logo">
-    <span id="room-title" class="gb-title"></span>
-    <span id="phase-label" class="gb-phase"></span>
-    <span id="timer" class="gb-timer"></span>
-    <label class="gb-opt" title="화면 흔들림/번쩍임 같은 강한 효과를 끕니다">
-      <input type="checkbox" id="reduce-motion"> 효과 줄이기
-    </label>
-    <button class="btn-sm ghost" id="leave" type="button">방 나가기</button>
+    <div class="gb-left">
+      <img src="/img/logo.svg" alt="" class="topbar-logo">
+      <div>
+        <div id="room-title" class="gb-title"></div>
+        <div id="room-sub" class="gb-sub"></div>
+      </div>
+    </div>
+
+    <div class="gb-phase">
+      <span id="phase-ico" class="phase-ico"></span>
+      <span id="phase-label"></span>
+    </div>
+
+    <div class="gb-right">
+      <div class="gb-timer" id="timer-box" title="남은 시간">
+        <svg viewBox="0 0 44 44" width="46" height="46" aria-hidden="true">
+          <circle class="trk" cx="22" cy="22" r="18"/>
+          <circle class="bar" id="timerring" cx="22" cy="22" r="18"/>
+        </svg>
+        <span id="timer"></span>
+      </div>
+      <label class="gb-opt" title="화면 흔들림/번쩍임 같은 강한 효과를 끕니다">
+        <input type="checkbox" id="reduce-motion"> 효과 줄이기
+      </label>
+      <button class="btn-sm ghost" id="leave" type="button" data-icon="door">나가기</button>
+    </div>
   </header>
-  <div class="timerbar"><div id="timerfill"></div></div>
 
   <main class="stage">
     <section class="board" id="board">
-      <div id="role-card" class="role-card hidden" aria-live="polite">
-        <div class="role-inner" id="role-inner">
-          <div class="role-face role-front"><span>?</span></div>
-          <div class="role-face role-back"><img id="role-img" alt=""></div>
+      <aside id="role-card" class="dossier hidden" aria-live="polite">
+        <div class="dossier-tag">DOSSIER</div>
+        <div class="role-card" id="role-flip">
+          <div class="role-inner" id="role-inner">
+            <div class="role-face role-front"><span id="role-front-ico"></span></div>
+            <div class="role-face role-back"><img id="role-img" alt=""></div>
+          </div>
         </div>
         <div id="role-name" class="role-name"></div>
         <div id="role-mates" class="role-mates"></div>
-      </div>
+      </aside>
 
-      <div id="ring" class="ring"></div>
-      <div class="center" id="center">
-        <div id="center-msg" class="center-msg"></div>
-        <div id="actions" class="actions"></div>
+      <div class="table-wrap" id="table-wrap">
+        <div class="table"><div class="felt"></div><div class="lamp"></div></div>
+        <div id="ring" class="ring"></div>
+        <div class="center" id="center">
+          <div id="center-msg" class="center-msg"></div>
+          <div id="actions" class="actions"></div>
+        </div>
       </div>
     </section>
 
-    <aside class="chat">
+    <aside class="chat panel deco">
       <div id="tabs" class="chat-tabs" role="tablist"></div>
       <ul id="log" class="chat-log" aria-live="polite"></ul>
       <form id="chat-form" class="chat-form" autocomplete="off">
         <input id="chat-input" maxlength="200" placeholder="메시지 입력">
-        <button class="btn-sm" type="submit">전송</button>
+        <button class="btn-sm" type="submit" aria-label="전송" data-icon="chat">전송</button>
       </form>
     </aside>
   </main>
 
   <div id="over" class="overlay hidden">
-    <div class="over-card">
+    <div class="over-card panel deco">
+      <div class="over-kicker" id="over-kicker">GAME OVER</div>
       <h2 id="over-title"></h2>
+      <div class="deco-rule"><i></i></div>
       <ul id="over-roles" class="over-roles"></ul>
       <div id="over-rating" class="over-rating"></div>
       <button class="btn" id="over-close" type="button">대기실로</button>
@@ -67,6 +94,7 @@
   <div id="fx" class="fx" aria-hidden="true"></div>
 
   <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/ui.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/anim.js"></script>
   <script src="/js/room.js"></script>

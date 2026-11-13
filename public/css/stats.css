@@ -1,39 +1,84 @@
+.page { max-width: 860px; margin: 0 auto; padding: 28px 18px 60px; }
+.page h2 { font-size: 28px; color: var(--gold-hi); }
+.page h3.sec { font-size: 18px; margin: 28px 0 10px; color: var(--gold-hi); display: flex; align-items: center; gap: 8px; }
+.page h3.sec .ico { color: var(--gold); }
+
+/* 티어 뱃지 */
 .tier {
-  display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: 12px; font-weight: bold;
-  color: #111; white-space: nowrap;
+  display: inline-flex; align-items: center; gap: 6px; padding: 2px 12px 2px 6px; border-radius: 99px;
+  font-size: 12px; font-weight: 700; color: #151008; white-space: nowrap;
 }
-.tier-bronze { background: #c98a5a; }
-.tier-silver { background: #c3c8d4; }
-.tier-gold { background: #e0b341; }
-.tier-platinum { background: #6fd6c8; }
-.tier-diamond { background: #6aa8ff; }
-.tier-master { background: linear-gradient(90deg, #ff6bd6, #ffb36b); }
+.tier-bronze { background: linear-gradient(180deg, #f0b98d, #b97a4c); }
+.tier-silver { background: linear-gradient(180deg, #f2f5fb, #aab3c5); }
+.tier-gold { background: linear-gradient(180deg, #ffe597, #d4a843); }
+.tier-platinum { background: linear-gradient(180deg, #b8fff3, #55c4b8); }
+.tier-diamond { background: linear-gradient(180deg, #cfe1ff, #6f9be6); }
+.tier-master { background: linear-gradient(180deg, #ffd0f3, #d27be6); }
 
-.page { max-width: 760px; margin: 0 auto; padding: 16px; }
-.page h2 { margin-top: 8px; }
-.table { width: 100%; border-collapse: collapse; background: var(--panel); border-radius: var(--radius); overflow: hidden; }
-.table th, .table td { padding: 9px 10px; text-align: left; font-size: 14px; }
-.table th { background: var(--panel-2); color: var(--muted); font-weight: normal; font-size: 12px; }
-.table tr + tr td { border-top: 1px solid #2a3048; }
-.table tr.me td { background: rgba(224, 179, 65, 0.12); }
+/* ----- 랭킹 ----- */
+.podium { display: grid; grid-template-columns: 1fr 1.15fr 1fr; align-items: end; gap: 12px; margin: 18px 0 26px; }
+.pod {
+  text-align: center; padding: 18px 10px 14px; border-radius: var(--radius); position: relative;
+  background: linear-gradient(180deg, rgba(34, 28, 44, 0.95), rgba(18, 15, 24, 0.95)); border: 1px solid var(--line);
+}
+.pod.p1 { padding-top: 26px; border-color: var(--gold); box-shadow: 0 0 40px rgba(212, 168, 67, 0.22); }
+.pod .medal {
+  position: absolute; top: -14px; left: 50%; transform: translateX(-50%); width: 30px; height: 30px; border-radius: 50%;
+  display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; color: #1a1306;
+  background: linear-gradient(180deg, var(--gold-hi), var(--gold)); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+.pod.p2 .medal { background: linear-gradient(180deg, #f2f5fb, #aab3c5); }
+.pod.p3 .medal { background: linear-gradient(180deg, #f0b98d, #b97a4c); }
+.pod .pav { width: 64px; height: 64px; margin: 0 auto 8px; border-radius: 50%; overflow: hidden; border: 2px solid var(--gold-lo); }
+.pod.p1 .pav { width: 78px; height: 78px; border-color: var(--gold-hi); }
+.pod .pav svg { display: block; width: 100%; height: 100%; }
+.pod .nm { font-family: var(--font-display); font-weight: 800; font-size: 16px; }
+.pod .rt { font-size: 22px; font-weight: 700; color: var(--gold-hi); font-variant-numeric: tabular-nums; }
+.pod .wr { font-size: 12px; color: var(--muted); }
+.pod.me .nm::after { content: ' (나)'; color: var(--gold); font-size: 12px; }
+.pod .tier { margin-top: 6px; }
+
+.table { width: 100%; border-collapse: separate; border-spacing: 0 6px; }
+.table th { padding: 4px 12px; text-align: left; color: var(--muted); font-weight: 500; font-size: 12px; letter-spacing: 0.06em; }
+.table td { padding: 11px 12px; font-size: 14px; background: rgba(28, 23, 37, 0.9); }
+.table td:first-child { border-radius: 10px 0 0 10px; }
+.table td:last-child { border-radius: 0 10px 10px 0; }
+.table tr.me td { background: rgba(212, 168, 67, 0.14); }
 .table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.table .rk { font-family: var(--font-display); font-weight: 800; color: var(--gold); width: 44px; }
 .pos { color: var(--ok); }
-.neg { color: var(--danger); }
+.neg { color: #ff6a63; }
 
-.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 12px 0; }
-.stat { background: var(--panel); border-radius: var(--radius); padding: 14px; text-align: center; }
-.stat b { display: block; font-size: 24px; margin-top: 4px; }
-.stat span { color: var(--muted); font-size: 12px; }
-.progress { height: 8px; background: var(--panel-2); border-radius: 4px; overflow: hidden; margin-top: 8px; }
-.progress > i { display: block; height: 100%; background: var(--accent); }
-.nav-links { display: flex; gap: 8px; }
-.nav-links a { color: var(--text); text-decoration: none; background: var(--panel-2); padding: 7px 12px; border-radius: 6px; font-size: 14px; }
+/* ----- 프로필 ----- */
+.hero {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 20px; padding: 22px;
+}
+.hero .hav { width: 92px; height: 92px; border-radius: 50%; overflow: hidden; border: 3px solid var(--gold); box-shadow: 0 0 30px rgba(212, 168, 67, 0.3); }
+.hero .hav svg { display: block; width: 100%; height: 100%; }
+.hero .hname { font-family: var(--font-display); font-size: 28px; font-weight: 800; }
+.hero .hmeta { display: flex; align-items: center; gap: 10px; margin-top: 6px; color: var(--muted); font-size: 14px; flex-wrap: wrap; }
+.hero .crest-big { filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.6)); }
+@media (max-width: 560px) { .hero { grid-template-columns: auto 1fr; } .hero .crest-big { display: none; } }
 
-/* 종료 화면 레이팅 */
-.rating-line { font-size: 22px; font-weight: bold; font-variant-numeric: tabular-nums; }
-.rating-delta.pos { color: var(--ok); }
-.rating-delta.neg { color: var(--danger); }
-.rating-break { font-size: 12px; color: var(--muted); margin-top: 4px; }
-.tier-change { margin-top: 6px; font-size: 18px; font-weight: bold; }
-.tier-change.up { color: var(--accent); text-shadow: 0 0 14px rgba(224, 179, 65, 0.9); }
-.tier-change.down { color: #9aa0b5; }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 14px 0; }
+.stat { padding: 16px; text-align: center; border-radius: var(--radius); background: rgba(28, 23, 37, 0.9); border: 1px solid var(--line); }
+.stat span { color: var(--muted); font-size: 12px; letter-spacing: 0.06em; }
+.stat b { display: block; font-family: var(--font-display); font-size: 26px; margin-top: 4px; color: var(--gold-hi); }
+.progress-wrap { padding: 14px 16px; border-radius: var(--radius); background: rgba(28, 23, 37, 0.9); border: 1px solid var(--line); }
+.progress-wrap .lbl { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.progress { height: 10px; background: rgba(255, 255, 255, 0.08); border-radius: 5px; overflow: hidden; }
+.progress > i { display: block; height: 100%; background: linear-gradient(90deg, var(--gold-lo), var(--gold-hi)); border-radius: 5px; }
+
+.role-rows { display: grid; gap: 8px; }
+.role-row { display: grid; grid-template-columns: 90px 1fr 120px; gap: 12px; align-items: center; padding: 8px 12px; border-radius: 10px; background: rgba(28, 23, 37, 0.9); }
+.role-row .rn { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.role-row .rn img { width: 22px; height: 28px; border-radius: 3px; }
+.role-row .bar { height: 8px; border-radius: 4px; background: rgba(255, 255, 255, 0.08); overflow: hidden; }
+.role-row .bar i { display: block; height: 100%; background: linear-gradient(90deg, #7a5a1a, var(--gold)); }
+.role-row .rs { text-align: right; font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.chip { display: inline-block; padding: 1px 10px; border-radius: 99px; font-size: 12px; font-weight: 700; }
+.chip.win { color: #8be0b0; background: rgba(79, 174, 125, 0.16); }
+.chip.lose, .chip.left { color: #ff9a93; background: rgba(201, 48, 44, 0.16); }
+.muted { color: var(--muted); }
+.empty-note { padding: 18px; text-align: center; color: var(--muted); font-size: 14px; border: 1px dashed var(--line); border-radius: var(--radius); }

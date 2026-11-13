@@ -16,40 +16,42 @@ const errText = (code) => ERRORS[code] || '요청에 실패했습니다.';
 let socket;
 let pendingRoomId = null;
 
+const el = (tag, cls, text) => {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+};
+
 function renderRooms(rooms) {
   const list = $('rooms');
   list.replaceChildren();
   $('empty').classList.toggle('hidden', rooms.length > 0);
   for (const r of rooms) {
-    const li = document.createElement('li');
-    li.className = 'room-item';
+    const li = el('li', `room-item ${r.status}`);
 
-    const title = document.createElement('div');
-    title.className = 'room-title';
-    title.textContent = (r.hasPassword ? '🔒 ' : '') + r.title; // 사용자 입력은 textContent로만 넣는다
-    const host = document.createElement('div');
-    host.className = 'room-host';
-    host.textContent = `방장 ${r.hostNickname}`;
-    const titleWrap = document.createElement('div');
-    titleWrap.style.flex = '1';
-    titleWrap.style.minWidth = '0';
-    titleWrap.append(title, host);
+    // 사용자 입력(제목/닉네임)은 항상 textContent 로만 넣는다
+    const info = el('div');
+    const title = el('div', 'room-title');
+    if (r.hasPassword) title.insertAdjacentHTML('beforeend', Icons.svg('lock', 16));
+    title.append(el('span', 't', r.title));
 
-    const count = document.createElement('span');
-    count.className = 'room-count';
-    count.textContent = `${r.playerCount}/${r.maxPlayers}`;
+    const meta = el('div', 'room-meta');
+    const seats = el('span', 'seats');
+    for (let i = 0; i < r.maxPlayers; i++) seats.append(el('i', i < r.playerCount ? 'on' : ''));
+    const count = el('span', '', `${r.playerCount}/${r.maxPlayers}명`);
+    const host = el('span');
+    host.insertAdjacentHTML('beforeend', Icons.svg('crown', 14));
+    host.append(document.createTextNode(` ${r.hostNickname}`));
+    const badge = el('span', `badge ${r.status}`, r.status === 'waiting' ? '대기중' : '게임중');
+    meta.append(badge, seats, count, host);
+    info.append(title, meta);
 
-    const badge = document.createElement('span');
-    badge.className = `badge ${r.status}`;
-    badge.textContent = r.status === 'waiting' ? '대기중' : '게임중';
-
-    const btn = document.createElement('button');
-    btn.className = 'btn-sm';
-    btn.textContent = '입장';
+    const btn = el('button', 'btn-sm', r.status === 'waiting' ? '입장' : '진행 중');
     btn.disabled = r.status !== 'waiting' || r.playerCount >= r.maxPlayers;
     btn.onclick = () => tryJoin(r);
 
-    li.append(titleWrap, count, badge, btn);
+    li.append(info, btn);
     list.append(li);
   }
 }
@@ -81,10 +83,12 @@ function numOrUndef(id) {
 
 async function init() {
   const me = await requireLogin();
-  $('me').textContent = `${me.nickname} · 레이팅 ${me.rating}`;
+  $('me-name').textContent = me.nickname;
+  $('me-rating').textContent = me.rating;
+  $('empty-ico').innerHTML = Icons.svg('fedora', 64);
   api('/api/profile').then(({ user }) => {
-    $('my-tier').textContent = user.tier.name;
-    $('my-tier').className = `tier tier-${user.tier.key}`;
+    $('my-crest').innerHTML = Icons.tierCrest(user.tier.key, 26);
+    $('my-crest').title = user.tier.name;
   }).catch(() => {});
 
   socket = io();
@@ -93,7 +97,8 @@ async function init() {
   socket.on('room:resume', () => { location.href = '/room.html'; }); // 새로고침 시 진행 중이던 방으로
   socket.on('lobby:update', ({ rooms }) => renderRooms(rooms));
 
-  $('logout').onclick = async () => {
+  $('logout').onclick = async (e) => {
+    e.preventDefault();
     await api('/api/auth/logout', {});
     location.href = '/login.html';
   };

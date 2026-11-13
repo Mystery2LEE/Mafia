@@ -54,8 +54,10 @@
     return play(el, k, { duration: ms, easing: 'linear', fill: 'none' });
   }
 
-  function banner(text, ms = 1600) {
-    const b = layer('banner', text);
+  function banner(iconName, text, ms = 1600) {
+    const b = layer('banner');
+    b.innerHTML = `${Icons.svg(iconName, 34)}<span></span>`;
+    b.lastChild.textContent = text;
     return play(b, [
       { opacity: 0, transform: 'translateX(-50%) translateY(-14px) scale(0.9)' },
       { opacity: 1, transform: 'translateX(-50%) translateY(0) scale(1)', offset: 0.2 },
@@ -68,7 +70,7 @@
     const c = layer('flipcard');
     const inner = document.createElement('div');
     inner.className = 'inner';
-    inner.innerHTML = '<div class="face front">?</div><div class="face back"><img alt=""></div>';
+    inner.innerHTML = `<div class="face front">${Icons.svg('fedora', 52)}</div><div class="face back"><img alt=""></div>`;
     inner.querySelector('img').src = `/img/${role}.svg`;
     const cap = document.createElement('div');
     cap.className = 'cap';
@@ -80,8 +82,8 @@
   }
 
   const PHASE_BANNERS = {
-    night: '🌙 밤이 되었습니다', morning: '☀️ 아침이 밝았습니다', discussion: '💬 낮 토론',
-    vote: '🗳 투표 시간', defense: '🎤 최후 변론', verdict: '⚖️ 찬반 투표',
+    night: ['moon', '밤이 되었습니다'], morning: ['sun', '아침이 밝았습니다'], discussion: ['chat', '낮 토론'],
+    vote: ['ballot', '투표 시간'], defense: ['mic', '최후 변론'], verdict: ['scales', '찬반 투표'],
   };
 
   const Anim = {
@@ -89,7 +91,7 @@
 
     // 직업 배정: 카드 3D 플립(rotateY 180°) → 직업 SVG 공개, 마피아면 붉은 글로우(CSS)
     roleAssigned() {
-      const rc = $('role-card');
+      const rc = $('role-flip');
       Anim.holdRoleCard = true;
       rc.classList.remove('flipped');
       setTimeout(() => {
@@ -100,7 +102,7 @@
 
     // 낮/밤 전환은 body.night 클래스의 CSS 크로스페이드(배경 + 비네트). 여기서는 안내 배너만
     phaseChange(p) {
-      if (PHASE_BANNERS[p.phase]) banner(PHASE_BANNERS[p.phase]);
+      if (PHASE_BANNERS[p.phase]) banner(...PHASE_BANNERS[p.phase]);
     },
 
     // 사망자 발생: 원인별 연출
@@ -139,14 +141,14 @@
       const fast = reduced();
       await sleep(100);
       const c = card(k.id);
-      const name = c ? c.querySelector('.pname').textContent : '';
+      const name = c ? c.querySelector('.plate').textContent : '';
       const r = c ? c.getBoundingClientRect() : { left: innerWidth / 2, top: innerHeight / 2, width: 0, height: 0 };
       const cx = innerWidth / 2;
       const cy = innerHeight * 0.55;
 
       const spot = layer('spot');
-      const av = layer('exec-avatar', c ? c.querySelector('.avatar').firstChild.textContent : '?');
-      av.style.background = c ? getComputedStyle(c.querySelector('.avatar')).backgroundColor : '#555';
+      const av = layer('exec-avatar');
+      av.innerHTML = `<div class="exec-portrait">${Icons.avatar(k.id, 64)}</div>`; // 생성된 SVG (사용자 입력 없음)
       const nm = layer('exec-name', name);
       av.style.left = `${r.left + r.width / 2 - 32}px`;
       av.style.top = `${r.top + 6}px`;
@@ -162,7 +164,8 @@
       ]);
 
       if (!fast) {
-        const g = layer('gavel', '🔨');
+        const g = layer('gavel');
+        g.innerHTML = Icons.svg('gavel', 96);
         await play(g, [
           { transform: 'translateY(-160px) rotate(-50deg)', opacity: 0 },
           { transform: 'translateY(-40px) rotate(-50deg)', opacity: 1, offset: 0.4 },
@@ -183,7 +186,7 @@
 
       const { el, flip } = flipCard(k.role, `${name} — ${ROLE_NAMES[k.role] || ''}`);
       await flip;
-      await sleep(fast ? 800 : 1300);
+      await sleep(fast ? 800 : 1000); // 전체 약 4.2초 — 처형 단계(5초) 안에 끝나야 밤 전환과 겹치지 않는다
       el.remove();
       play(spot, [{ opacity: 1 }, { opacity: 0 }], { duration: 300 }).then(() => spot.remove());
     },
@@ -220,7 +223,8 @@
           ], { duration: 350, delay: 1100, fill: 'backwards' });
         }
         if (reduced()) return;
-        const m = layer('magnifier', '🔍');
+        const m = layer('magnifier');
+        m.innerHTML = Icons.svg('magnifier', 52);
         const sx = innerWidth / 2;
         const sy = innerHeight - 80;
         const tx = rect.left + rect.width / 2 - 20;
@@ -263,7 +267,8 @@
 
     // 내가 사망: "당신은 사망했습니다" 타이틀 (채도 감소는 body.ghost, 사망자 탭 활성화는 room.js)
     iDied() {
-      const t = layer('bigtitle', '당신은 사망했습니다');
+      const t = layer('bigtitle');
+      t.innerHTML = `${Icons.svg('ghost', 56)}<span>당신은 사망했습니다</span>`;
       play(t, [
         { opacity: 0, transform: 'translate(-50%, -50%) scale(1.6)' },
         { opacity: 1, transform: 'translate(-50%, -50%) scale(1)', offset: 0.2 },
@@ -333,8 +338,9 @@
       if (up || down) {
         const tc = document.createElement('div');
         tc.className = `tier-change ${up ? 'up' : 'down'}`;
-        tc.textContent = up
-          ? `🎉 승급! ${r.tierBefore.name} → ${r.tierAfter.name}` : `⬇ 강등 ${r.tierBefore.name} → ${r.tierAfter.name}`;
+        tc.innerHTML = `${Icons.svg(up ? 'arrowUp' : 'arrowDown', 20)}<span></span>`;
+        tc.lastChild.textContent = up
+          ? ` 승급 ${r.tierBefore.name} → ${r.tierAfter.name}` : ` 강등 ${r.tierBefore.name} → ${r.tierAfter.name}`;
         box.append(tc);
         play(tc, up
           ? [{ opacity: 0, transform: 'scale(0.4)' }, { opacity: 1, transform: 'scale(1.25)', offset: 0.6 }, { opacity: 1, transform: 'scale(1)' }]

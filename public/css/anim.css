@@ -2,61 +2,87 @@
 .fx { position: fixed; inset: 0; pointer-events: none; z-index: 40; overflow: hidden; }
 .fx .flash { position: absolute; inset: 0; background: rgba(220, 20, 20, 0.85); opacity: 0; }
 .fx .banner {
-  position: absolute; left: 50%; top: 16%; transform: translateX(-50%); white-space: nowrap;
-  font-size: clamp(24px, 5vw, 44px); font-weight: 800; text-shadow: 0 2px 16px #000; color: #fff;
+  position: absolute; left: 50%; top: 17%; transform: translateX(-50%); white-space: nowrap;
+  display: flex; align-items: center; gap: 14px; padding: 10px 30px;
+  font-family: var(--font-display); font-weight: 800; font-size: clamp(22px, 4.6vw, 40px); letter-spacing: 0.06em;
+  color: var(--gold-hi); text-shadow: 0 2px 16px #000;
+  background: linear-gradient(90deg, transparent, rgba(8, 6, 12, 0.82) 18%, rgba(8, 6, 12, 0.82) 82%, transparent);
+  border-top: 1px solid var(--gold-lo); border-bottom: 1px solid var(--gold-lo);
 }
+.fx .banner .ico { color: var(--gold); }
 .fx .bigtitle {
   position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); white-space: nowrap;
-  font-size: clamp(30px, 7vw, 64px); font-weight: 900; color: #ff3b30; text-shadow: 0 4px 24px #000;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  font-family: var(--font-display); font-size: clamp(30px, 7vw, 60px); font-weight: 800; color: #ff4b42; text-shadow: 0 4px 28px #000;
 }
 .fx .pulse {
   position: absolute; left: 50%; top: 50%; width: 220px; height: 220px; margin: -110px 0 0 -110px;
-  border: 6px solid #3fb56b; border-radius: 50%; box-shadow: 0 0 30px #3fb56b, inset 0 0 30px #3fb56b;
+  border: 5px solid var(--ok); border-radius: 50%; box-shadow: 0 0 30px var(--ok), inset 0 0 30px var(--ok);
 }
 .fx .poptext {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); white-space: nowrap;
-  font-size: clamp(22px, 5vw, 40px); font-weight: 800; color: #8be0b0; text-shadow: 0 2px 14px #000;
+  font-family: var(--font-display); font-size: clamp(22px, 5vw, 38px); font-weight: 800; color: #8be0b0; text-shadow: 0 2px 16px #000;
 }
 .fx .spot {
   position: absolute; left: 50%; top: 0; width: 380px; height: 100%; transform: translateX(-50%);
-  background: linear-gradient(to bottom, rgba(255, 255, 215, 0.7), rgba(255, 255, 215, 0));
+  background: linear-gradient(to bottom, rgba(255, 240, 200, 0.75), rgba(255, 240, 200, 0));
   clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%); opacity: 0;
 }
-.fx .gavel { position: absolute; left: 50%; top: 22%; margin-left: -10px; font-size: 80px; transform-origin: 85% 85%; }
-.fx .exec-avatar {
-  position: absolute; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center;
-  font-size: 28px; font-weight: bold; color: #fff; box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+.fx .gavel { position: absolute; left: 50%; top: 22%; margin-left: -48px; color: var(--gold-hi); transform-origin: 85% 85%; filter: drop-shadow(0 6px 16px #000); }
+.fx .exec-avatar { position: absolute; width: 72px; height: 72px; }
+.fx .exec-portrait {
+  width: 100%; height: 100%; border-radius: 50%; overflow: hidden; padding: 0;
+  border: 3px solid var(--gold); box-shadow: 0 0 26px rgba(0, 0, 0, 0.7);
 }
-.fx .exec-name { position: absolute; font-size: 14px; font-weight: bold; text-shadow: 0 1px 6px #000; transform: translateX(-50%); }
-.fx .flipcard { position: absolute; left: 50%; top: 50%; width: 120px; height: 156px; margin: -78px 0 0 -60px; perspective: 800px; }
+.fx .exec-portrait svg { display: block; width: 100%; height: 100%; }
+.fx .exec-name {
+  position: absolute; transform: translateX(-50%); padding: 2px 10px; border-radius: 4px;
+  font-size: 13px; font-weight: 700; color: var(--gold-hi); background: #17120a; border: 1px solid var(--gold-lo);
+}
+.fx .flipcard { position: absolute; left: 50%; top: 50%; width: 132px; aspect-ratio: 200 / 260; margin: -86px 0 0 -66px; perspective: 800px; }
 .fx .flipcard .inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; }
 .fx .flipcard .face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 10px; overflow: hidden; }
-.fx .flipcard .front { background: #2b3150; border: 2px solid #4a5280; display: grid; place-items: center; font-size: 44px; color: #fff; }
+.fx .flipcard .front {
+  display: grid; place-items: center; color: var(--gold); border: 2px solid var(--gold-lo);
+  background: repeating-linear-gradient(45deg, rgba(212, 168, 67, 0.1) 0 6px, transparent 6px 12px), linear-gradient(180deg, #2b1118, #14070b);
+}
 .fx .flipcard .back { transform: rotateY(180deg); }
 .fx .flipcard .back img { width: 100%; height: 100%; display: block; }
-.fx .flipcard .cap { position: absolute; left: 0; right: 0; top: 100%; margin-top: 8px; text-align: center; font-weight: bold; text-shadow: 0 1px 8px #000; }
-.fx .magnifier { position: absolute; font-size: 44px; filter: drop-shadow(0 2px 6px #000); }
+.fx .flipcard .cap {
+  position: absolute; left: 50%; top: 100%; margin-top: 10px; transform: translateX(-50%); white-space: nowrap;
+  font-family: var(--font-display); font-weight: 800; color: var(--gold-hi); text-shadow: 0 2px 10px #000;
+}
+.fx .magnifier { position: absolute; color: var(--gold-hi); filter: drop-shadow(0 3px 8px #000); }
 .fx canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 
 /* 사망자 카드는 기울어진 채 아래로 처진 모습으로 고정 */
-.pcard.dead { transform: translate(-50%, -44%) rotate(9deg); }
+.pcard.dead { transform: translate(-50%, -46%) rotate(8deg); }
 /* 사망한 본인 화면: 채도 감소 */
 body.ghost .stage { filter: saturate(0.35); transition: filter 1s; }
 
 /* 마피아 카드 붉은 글로우 */
-.role-card.mafia.flipped .role-back { animation: glowPulse 1.6s ease-in-out infinite; }
+.dossier.mafia .role-card.flipped .role-back { animation: glowPulse 1.6s ease-in-out infinite; }
 @keyframes glowPulse {
   0%, 100% { box-shadow: 0 0 14px 2px rgba(255, 40, 40, 0.6); }
   50% { box-shadow: 0 0 30px 8px rgba(255, 40, 40, 1); }
 }
 
+/* 종료 화면 레이팅 */
+.rating-line { font-family: var(--font-display); font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--ivory); }
+.rating-delta.pos { color: var(--ok); }
+.rating-delta.neg { color: #ff6a63; }
+.rating-break { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.tier-change { margin-top: 8px; font-family: var(--font-display); font-size: 18px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; }
+.tier-change.up { color: var(--gold-hi); text-shadow: 0 0 16px rgba(212, 168, 67, 0.9); }
+.tier-change.down { color: #9aa0b5; }
+
 /* 움직임 줄이기: OS 설정 또는 상단 "효과 줄이기" 체크 */
 @media (prefers-reduced-motion: reduce) {
   .bg, .vignette, .role-inner, .pcard, .votebar > i, .over-roles .flip { transition-duration: 0.01ms !important; }
-  .role-card.mafia.flipped .role-back { animation: none; }
+  .dossier.mafia .role-card.flipped .role-back, .pcard.selectable .avatar { animation: none; }
 }
 body.reduce-motion .bg, body.reduce-motion .vignette, body.reduce-motion .role-inner,
 body.reduce-motion .pcard, body.reduce-motion .votebar > i, body.reduce-motion .over-roles .flip {
   transition-duration: 0.01ms !important;
 }
-body.reduce-motion .role-card.mafia.flipped .role-back { animation: none; }
+body.reduce-motion .dossier.mafia .role-card.flipped .role-back, body.reduce-motion .pcard.selectable .avatar { animation: none; }

@@ -4,45 +4,56 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>마피아 - 내 프로필</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/lobby.css">
   <link rel="stylesheet" href="/css/stats.css">
 </head>
 <body>
   <header class="topbar">
-    <img src="/img/logo.svg" alt="마피아" class="topbar-logo">
+    <img src="/img/logo.svg" alt="" class="topbar-logo">
+    <span class="brand">MAFIA</span>
     <span class="topbar-me"></span>
     <nav class="nav-links">
-      <a href="/lobby.html">로비</a>
-      <a href="/ranking.html">랭킹</a>
+      <a href="/lobby.html" data-icon="list">로비</a>
+      <a href="/ranking.html" data-icon="trophy">랭킹</a>
+      <a href="/profile.html" class="current" data-icon="user">내 프로필</a>
     </nav>
   </header>
   <main class="page">
-    <h2><span id="nick"></span> <span id="tier" class="tier"></span></h2>
+    <section class="hero panel deco">
+      <div class="hav" id="hav"></div>
+      <div>
+        <div class="hname" id="nick"></div>
+        <div class="hmeta"><span id="tier" class="tier"></span><span id="rank"></span></div>
+      </div>
+      <div class="crest-big" id="crest"></div>
+    </section>
+
     <div class="stat-grid">
       <div class="stat"><span>레이팅</span><b id="rating"></b></div>
-      <div class="stat"><span>순위</span><b id="rank"></b></div>
       <div class="stat"><span>전적</span><b id="record"></b></div>
       <div class="stat"><span>승률</span><b id="winrate"></b></div>
     </div>
-    <div class="stat">
-      <span id="next-label"></span>
+    <div class="progress-wrap">
+      <div class="lbl"><span id="cur-label"></span><span id="next-label"></span></div>
       <div class="progress"><i id="progress"></i></div>
     </div>
 
-    <h2>직업별 승률</h2>
-    <table class="table">
-      <thead><tr><th>직업</th><th class="num">경기</th><th class="num">승</th><th class="num">승률</th></tr></thead>
-      <tbody id="roles"></tbody>
-    </table>
+    <h3 class="sec" data-icon="fedora">직업별 승률</h3>
+    <div id="roles" class="role-rows"></div>
 
-    <h2>최근 10경기</h2>
+    <h3 class="sec" data-icon="list">최근 10경기</h3>
     <table class="table">
       <thead><tr><th>방</th><th>직업</th><th>결과</th><th class="num">레이팅</th></tr></thead>
       <tbody id="recent"></tbody>
     </table>
     <div class="msg" id="msg"></div>
   </main>
+  <script src="/js/ui.js"></script>
   <script src="/js/api.js"></script>
   <script src="/js/profile.js"></script>
 </body>

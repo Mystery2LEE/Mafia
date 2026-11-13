@@ -1,5 +1,5 @@
 // 게임방 클라이언트. 서버가 내려주는 상태를 그리기만 한다 (판정은 전부 서버).
-// 연출은 window.Anim 의 훅을 호출해서 처리한다 (anim.js).
+// 연출은 window.Anim 의 훅을 호출해서 처리한다 (anim.js). 아이콘/아바타는 ui.js (이모지 미사용).
 const $ = (id) => document.getElementById(id);
 const A = () => window.Anim || {};
 
@@ -8,7 +8,12 @@ const PHASE_NAMES = {
   role_reveal: '직업 공개', night: '밤', morning: '아침 결과', discussion: '낮 토론',
   vote: '투표', defense: '최후 변론', verdict: '찬반 투표', execution: '처형',
 };
-const TAB_NAMES = { public: '전체', mafia: '마피아', dead: '사망자 👻', system: '알림' };
+const PHASE_ICONS = {
+  waiting: 'users', role_reveal: 'eye', night: 'moon', morning: 'sun', discussion: 'chat',
+  vote: 'ballot', defense: 'mic', verdict: 'scales', execution: 'gavel',
+};
+const TAB_NAMES = { public: '전체', mafia: '마피아', dead: '사망자', system: '알림' };
+const TAB_ICONS = { public: 'chat', mafia: 'fedora', dead: 'ghost', system: 'bell' };
 const ERRORS = {
   not_host: '방장만 시작할 수 있습니다.', not_enough_players: '최소 4명이 필요합니다.',
   already_started: '이미 시작되었습니다.', forbidden: '지금은 할 수 없습니다.',
@@ -16,6 +21,7 @@ const ERRORS = {
   no_ability: '능력이 없는 직업입니다.', rate_limited: '너무 빠르게 보내고 있습니다.',
   invalid_text: '1~200자로 입력하세요.', invalid_vote: '잘못된 요청입니다.',
 };
+const RING = 113.1; // 타이머 원의 둘레(2πr, r=18)
 
 let socket;
 let state = null;
@@ -26,17 +32,14 @@ let activeTab = 'public';
 let tally = {};
 let revealed = {}; // userId -> role (투표 처형으로 공개된 직업)
 let phaseStart = null;
-let lastOver = null;
 
 // ---------- 유틸 ----------
-const hue = (id) => (id * 67) % 360;
 const el = (tag, cls, text) => {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
   if (text !== undefined) e.textContent = text;
   return e;
 };
-const me = () => state?.players.find((p) => p.id === state.youId);
 const nickOf = (id) => state?.players.find((p) => p.id === id)?.nickname ?? '?';
 const flash = (msg) => { $('center-msg').textContent = msg; };
 
@@ -48,8 +51,12 @@ function render() {
 
   document.body.classList.toggle('night', phase === 'night');
   document.body.classList.toggle('ghost', playing && !!state.you && !state.you.alive); // 사망자 화면 채도 감소
-  $('room-title').textContent = (state.hasPassword ? '🔒 ' : '') + state.title;
-  $('phase-label').textContent = playing ? `${state.day}일차 · ${PHASE_NAMES[phase] || ''}` : '대기실';
+  $('room-title').textContent = state.title;
+  $('room-sub').textContent = playing
+    ? `${state.day}일차 · 생존 ${state.players.filter((p) => !p.left && p.alive).length}명`
+    : `대기실 · ${state.players.length}/${state.maxPlayers}명${state.hasPassword ? ' · 비밀방' : ''}`;
+  $('phase-label').textContent = playing ? (PHASE_NAMES[phase] || '') : '대기실';
+  $('phase-ico').innerHTML = Icons.svg(PHASE_ICONS[playing ? phase : 'waiting'] || 'users', 20);
 
   renderRole();
   renderRing();
@@ -60,17 +67,19 @@ function render() {
 }
 
 function renderRole() {
-  const card = $('role-card');
+  const dos = $('role-card');
   const you = state.you;
-  if (state.status !== 'playing' || !you) { card.classList.add('hidden'); return; }
-  card.classList.remove('hidden');
-  if (!A().holdRoleCard) card.classList.add('flipped'); // 직업 배정 연출 중에는 anim.js 가 직접 뒤집는다
+  if (state.status !== 'playing' || !you) { dos.classList.add('hidden'); return; }
+  dos.classList.remove('hidden');
+  const flip = $('role-flip');
+  if (!A().holdRoleCard) flip.classList.add('flipped'); // 직업 배정 연출 중에는 anim.js 가 직접 뒤집는다
+  $('role-front-ico').innerHTML = Icons.svg('fedora', 34);
   $('role-img').src = `/img/${you.role}.svg`;
   $('role-img').alt = ROLE_NAMES[you.role];
   $('role-name').textContent = ROLE_NAMES[you.role];
-  card.classList.toggle('mafia', you.role === 'mafia');
+  dos.classList.toggle('mafia', you.role === 'mafia');
   $('role-mates').textContent = you.mafiaTeam
-    ? `동료: ${you.mafiaTeam.filter((m) => m.id !== state.youId).map((m) => m.nickname).join(', ') || '없음'}` : '';
+    ? `동료 ${you.mafiaTeam.filter((m) => m.id !== state.youId).map((m) => m.nickname).join(', ') || '없음'}` : '';
 }
 
 function targetable(p) {
@@ -109,7 +118,7 @@ function renderRing() {
     const card = el('button', 'pcard');
     card.type = 'button';
     card.dataset.id = p.id;
-    card.style.left = `${50 + 41 * Math.cos(ang)}%`;
+    card.style.left = `${50 + 43 * Math.cos(ang)}%`;
     card.style.top = `${50 + 41 * Math.sin(ang)}%`;
     const dead = playing && p.alive === false;
     if (dead) card.classList.add('dead');
@@ -118,22 +127,40 @@ function renderRing() {
     if (playing && state.defendantId === p.id) card.classList.add('defendant');
     const can = targetable(p);
     if (can) card.classList.add('selectable');
-    if (sel === p.id) card.classList.add('selected');
+    const isSel = sel === p.id;
+    if (isSel) card.classList.add('selected');
 
-    const av = el('div', 'avatar', p.nickname.slice(0, 1).toUpperCase());
-    av.style.background = `hsl(${hue(p.id)} 45% 38%)`;
-    if (dead) av.append(el('span', 'stamp dead', '✖'));
+    // 아바타: id 로 결정되는 초상화 (생성된 SVG 문자열이라 사용자 입력이 섞이지 않는다)
+    const av = el('div', 'avatar');
+    const portrait = el('div', 'portrait');
+    portrait.innerHTML = Icons.avatar(p.id, 64);
+    av.append(portrait);
+    if (dead) av.append(stampEl('dead', Icons.svg('cross', 34)));
     const log = policeLog.filter((l) => l.targetId === p.id).at(-1);
-    if (log) av.append(el('span', `stamp ${log.isMafia ? 'mafia' : 'clean'}`, log.isMafia ? '마피아' : '시민'));
-    if (tally[p.id]) av.append(el('span', 'votecount', `${tally[p.id]}`));
+    if (log) av.append(stampEl(log.isMafia ? 'mafia' : 'clean', log.isMafia ? '마피아' : '시민'));
+    if (tally[p.id]) {
+      const vc = el('span', 'votecount');
+      vc.insertAdjacentHTML('beforeend', Icons.svg('ballot', 12));
+      vc.append(document.createTextNode(String(tally[p.id])));
+      av.append(vc);
+    }
+    if (isSel) {
+      const pb = el('span', 'pick-badge');
+      pb.innerHTML = Icons.svg('target', 14);
+      av.append(pb);
+    }
     card.append(av);
 
-    card.append(el('div', 'pname', `${p.isHost ? '👑' : ''}${p.nickname}`));
+    const plate = el('span', 'plate');
+    if (p.isHost) plate.insertAdjacentHTML('beforeend', Icons.svg('crown', 12));
+    plate.append(document.createTextNode(p.nickname));
+    card.append(plate);
+
     let tag = '';
     let tagCls = 'ptag';
     if (revealed[p.id]) { tag = ROLE_NAMES[revealed[p.id]]; tagCls += ' role'; }
     else if (mates.some((m) => m.id === p.id) && p.id !== state.youId) { tag = '마피아 동료'; tagCls += ' mafia'; }
-    else if (Object.values(picks).includes(p.id) && state.phase === 'night') { tag = '🎯 지목됨'; tagCls += ' mafia'; }
+    else if (Object.values(picks).includes(p.id) && state.phase === 'night') { tag = '지목됨'; tagCls += ' mafia'; }
     else if (!p.connected) tag = '연결 끊김';
     else if (p.id === state.youId) tag = '나';
     card.append(el('div', tagCls, tag));
@@ -150,6 +177,12 @@ function renderRing() {
   });
 }
 
+function stampEl(kind, content) {
+  const s = el('span', `stamp ${kind}`);
+  if (content.startsWith('<')) s.innerHTML = content; else s.textContent = content;
+  return s;
+}
+
 function renderActions() {
   const box = $('actions');
   box.replaceChildren();
@@ -159,13 +192,14 @@ function renderActions() {
   if (state.status === 'waiting') {
     const n = state.players.length;
     if (state.hostId === state.youId) {
-      const b = el('button', 'btn-sm', '게임 시작');
+      const b = el('button', 'btn-sm');
+      b.innerHTML = `${Icons.svg('gavel', 16)}게임 시작`;
       b.disabled = n < 4;
       b.onclick = startGame;
       box.append(b);
-      msg.textContent = n < 4 ? `최소 4명이 필요합니다 (${n}/${state.maxPlayers})` : `${n}/${state.maxPlayers}명 — 시작할 수 있습니다`;
+      msg.textContent = n < 4 ? `최소 4명이 필요합니다 (${n}/${state.maxPlayers})` : `${n}/${state.maxPlayers}명 · 시작할 수 있습니다`;
     } else {
-      msg.textContent = `방장이 시작하기를 기다리는 중... (${n}/${state.maxPlayers})`;
+      msg.textContent = `방장이 시작하기를 기다리는 중 (${n}/${state.maxPlayers})`;
     }
     return;
   }
@@ -177,9 +211,9 @@ function renderActions() {
     case 'role_reveal': msg.textContent = `당신의 직업은 ${ROLE_NAMES[you.role]}입니다.`; break;
     case 'night':
       msg.textContent = ({
-        mafia: '죽일 사람을 선택하세요 (마피아 채팅으로 상의)',
-        doctor: '보호할 사람을 선택하세요',
-        police: '조사할 사람을 선택하세요',
+        mafia: '죽일 사람을 선택하세요. 마피아 채팅으로 상의할 수 있습니다.',
+        doctor: '보호할 사람을 선택하세요.',
+        police: '조사할 사람을 선택하세요.',
       })[you.role] || '밤입니다. 조용히 기다리세요.';
       break;
     case 'morning': msg.textContent = '아침이 밝았습니다.'; break;
@@ -197,8 +231,9 @@ function renderActions() {
     case 'verdict':
       if (state.defendantId === state.youId) { msg.textContent = '당신의 처형 여부를 투표 중입니다.'; break; }
       msg.textContent = `${nickOf(state.defendantId)}님을 처형할까요?`;
-      for (const [label, agree, cls] of [['찬성', true, 'agree'], ['반대', false, 'disagree']]) {
-        const b = el('button', `btn-sm ${cls}`, label);
+      for (const [label, agree, cls, icon] of [['찬성', true, 'agree', 'check'], ['반대', false, 'disagree', 'cross']]) {
+        const b = el('button', `btn-sm ${cls}`);
+        b.innerHTML = `${Icons.svg(icon, 16)}${label}`;
         if (you.verdict === agree) b.classList.add('on');
         b.onclick = () => castVerdict(agree);
         box.append(b);
@@ -216,8 +251,10 @@ function renderTabs() {
   if (!read.includes(activeTab)) activeTab = 'public';
   for (const ch of ['public', 'mafia', 'dead', 'system']) {
     if (!read.includes(ch)) continue;
-    const b = el('button', ch === activeTab ? 'active' : '', TAB_NAMES[ch]);
+    const b = el('button', ch === activeTab ? 'active' : '');
     b.type = 'button';
+    b.innerHTML = Icons.svg(TAB_ICONS[ch], 15);
+    b.append(document.createTextNode(TAB_NAMES[ch]));
     if (unread[ch] > 0 && ch !== activeTab) b.append(el('span', 'unread', String(unread[ch])));
     b.onclick = () => { activeTab = ch; unread[ch] = 0; render(); };
     tabs.append(b);
@@ -229,9 +266,14 @@ function renderLog() {
   log.replaceChildren();
   log.classList.toggle('dead-tab', activeTab === 'dead');
   for (const m of chat[activeTab]) {
-    const li = el('li', m.channel === 'system' ? 'sys' : '');
-    if (m.from) li.append(el('span', 'from', m.from.nickname));
-    li.append(document.createTextNode(m.text));
+    const mine = m.from && m.from.id === state.youId;
+    const li = el('li', m.channel === 'system' ? 'sys' : mine ? 'mine' : '');
+    if (m.channel === 'system') {
+      li.textContent = m.text;
+    } else {
+      if (!mine && m.from) li.append(el('span', 'from', m.from.nickname));
+      li.append(el('span', 'body', m.text));
+    }
     log.append(li);
   }
   log.scrollTop = log.scrollHeight;
@@ -319,6 +361,7 @@ function wire() {
   });
   socket.on('phase:change', (p) => {
     phaseStart = Date.now();
+    if (state) { state.endsAt = p.endsAt; state.phase = p.phase; state.day = p.day; }
     A().phaseChange?.(p);
   });
   socket.on('vote:update', (v) => {
@@ -340,7 +383,7 @@ function wire() {
     if (k.role) revealed[k.id] = k.role;
     A().killed?.(k);
   });
-  socket.on('game:over', (r) => { lastOver = r; showOver(r); });
+  socket.on('game:over', (r) => showOver(r));
   // 점수는 서버가 계산해서 본인 몫만 보내 준다 (game:over 직후 도착)
   socket.on('game:rating', (r) => A().rating?.(r, $('over-rating')));
 
@@ -353,20 +396,28 @@ function wire() {
 }
 
 function showOver(r) {
-  $('over-title').textContent = `${r.winner === 'mafia' ? '마피아' : '시민'} 팀 승리!`;
+  const mafiaWin = r.winner === 'mafia';
+  $('over-title').textContent = mafiaWin ? '마피아 팀 승리' : '시민 팀 승리';
+  $('over-kicker').textContent = mafiaWin ? 'THE MAFIA TAKES THE CITY' : 'JUSTICE PREVAILS';
+  document.querySelector('.over-card').classList.toggle('win-mafia', mafiaWin);
   const list = $('over-roles');
   list.replaceChildren();
   r.roles.forEach((x) => {
     const li = el('li');
     const flip = el('div', 'flip');
-    flip.append(el('div', 'side', '?'));
+    const front = el('div', 'side front');
+    front.innerHTML = Icons.svg('fedora', 30);
     const rev = el('div', 'side rev');
     const img = document.createElement('img');
     img.src = `/img/${x.role}.svg`;
     img.alt = ROLE_NAMES[x.role];
-    rev.append(img, el('div', 'nm', `${x.nickname}${x.alive ? '' : ' ✖'}`));
-    flip.append(rev);
-    li.append(flip);
+    rev.append(img);
+    flip.append(front, rev);
+    // 이름표는 카드 밖에 두어 카드가 가려지거나 잘리지 않게 한다
+    const cap = el('div', `cap${x.alive ? '' : ' dead'}`);
+    if (!x.alive) cap.insertAdjacentHTML('beforeend', Icons.svg('cross', 12));
+    cap.append(document.createTextNode(x.nickname));
+    li.append(flip, cap);
     list.append(li);
   });
   $('over-rating').textContent = '';
@@ -374,28 +425,26 @@ function showOver(r) {
   A().gameOver?.(r);
 }
 
-// ---------- 타이머 ----------
+// ---------- 타이머 (원형 게이지) ----------
 setInterval(() => {
+  const ring = $('timerring');
+  const box = $('timer-box');
   if (!state?.endsAt || state.status !== 'playing') {
     $('timer').textContent = '';
-    $('timerfill').style.width = '0';
+    ring.style.strokeDashoffset = '0';
+    box.classList.remove('low');
     return;
   }
   const remain = Math.max(0, state.endsAt - Date.now());
-  $('timer').textContent = `${Math.ceil(remain / 1000)}초`;
   const total = Math.max(remain, state.endsAt - (phaseStart || Date.now()));
-  $('timerfill').style.width = `${(remain / total) * 100}%`;
+  $('timer').textContent = Math.ceil(remain / 1000);
+  ring.style.strokeDashoffset = String(RING * (1 - remain / total));
+  box.classList.toggle('low', remain <= 5000);
 }, 150);
-
-// phase:change 로 endsAt 이 갱신되면 state 에도 반영 (room:state 가 곧 오지만 카운트다운을 끊김 없이 유지)
-function syncEndsAt() {
-  socket.on('phase:change', (p) => { if (state) { state.endsAt = p.endsAt; state.phase = p.phase; state.day = p.day; } });
-}
 
 async function init() {
   await requireLogin();
   socket = io();
-  syncEndsAt();
   wire();
 
   $('chat-form').addEventListener('submit', (e) => {
