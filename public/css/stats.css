@@ -1,0 +1,39 @@
+.tier {
+  display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: 12px; font-weight: bold;
+  color: #111; white-space: nowrap;
+}
+.tier-bronze { background: #c98a5a; }
+.tier-silver { background: #c3c8d4; }
+.tier-gold { background: #e0b341; }
+.tier-platinum { background: #6fd6c8; }
+.tier-diamond { background: #6aa8ff; }
+.tier-master { background: linear-gradient(90deg, #ff6bd6, #ffb36b); }
+
+.page { max-width: 760px; margin: 0 auto; padding: 16px; }
+.page h2 { margin-top: 8px; }
+.table { width: 100%; border-collapse: collapse; background: var(--panel); border-radius: var(--radius); overflow: hidden; }
+.table th, .table td { padding: 9px 10px; text-align: left; font-size: 14px; }
+.table th { background: var(--panel-2); color: var(--muted); font-weight: normal; font-size: 12px; }
+.table tr + tr td { border-top: 1px solid #2a3048; }
+.table tr.me td { background: rgba(224, 179, 65, 0.12); }
+.table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.pos { color: var(--ok); }
+.neg { color: var(--danger); }
+
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin: 12px 0; }
+.stat { background: var(--panel); border-radius: var(--radius); padding: 14px; text-align: center; }
+.stat b { display: block; font-size: 24px; margin-top: 4px; }
+.stat span { color: var(--muted); font-size: 12px; }
+.progress { height: 8px; background: var(--panel-2); border-radius: 4px; overflow: hidden; margin-top: 8px; }
+.progress > i { display: block; height: 100%; background: var(--accent); }
+.nav-links { display: flex; gap: 8px; }
+.nav-links a { color: var(--text); text-decoration: none; background: var(--panel-2); padding: 7px 12px; border-radius: 6px; font-size: 14px; }
+
+/* 종료 화면 레이팅 */
+.rating-line { font-size: 22px; font-weight: bold; font-variant-numeric: tabular-nums; }
+.rating-delta.pos { color: var(--ok); }
+.rating-delta.neg { color: var(--danger); }
+.rating-break { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.tier-change { margin-top: 6px; font-size: 18px; font-weight: bold; }
+.tier-change.up { color: var(--accent); text-shadow: 0 0 14px rgba(224, 179, 65, 0.9); }
+.tier-change.down { color: #9aa0b5; }

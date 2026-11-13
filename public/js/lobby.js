@@ -82,6 +82,10 @@ function numOrUndef(id) {
 async function init() {
   const me = await requireLogin();
   $('me').textContent = `${me.nickname} · 레이팅 ${me.rating}`;
+  api('/api/profile').then(({ user }) => {
+    $('my-tier').textContent = user.tier.name;
+    $('my-tier').className = `tier tier-${user.tier.key}`;
+  }).catch(() => {});
 
   socket = io();
   socket.on('connect_error', () => { location.href = '/login.html'; });

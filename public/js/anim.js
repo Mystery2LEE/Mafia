@@ -282,6 +282,68 @@
       Anim._confetti(colors, 3800);
     },
 
+    // 종료 화면: 레이팅 변화 카운트업(+/-) + 승급/강등 연출
+    rating(r, box) {
+      const LABEL = {
+        win: '승리', loss: '패배', survived: '생존', policeHit: '조사 성공', doctorSave: '세이브 성공',
+        mafiaNotExecutedWin: '처형당하지 않은 승리', left: '이탈(패배 처리)', leavePenalty: '이탈 패널티',
+      };
+      box.replaceChildren();
+      const line = document.createElement('div');
+      line.className = 'rating-line';
+      const num = document.createElement('span');
+      const dl = document.createElement('span');
+      dl.className = `rating-delta ${r.delta > 0 ? 'pos' : r.delta < 0 ? 'neg' : ''}`;
+      line.append(num, document.createTextNode(' '), dl);
+      box.append(line);
+
+      if (!r.counted) {
+        const note = document.createElement('div');
+        note.className = 'rating-break';
+        note.textContent = r.reason === 'too_few_players'
+          ? '인원이 부족해 랭킹에 반영되지 않았습니다.' : '이탈자가 많아 랭킹에 반영되지 않았습니다.';
+        box.append(note);
+      }
+      if (r.breakdown.length) {
+        const br = document.createElement('div');
+        br.className = 'rating-break';
+        br.textContent = r.breakdown.map((b) => `${LABEL[b.key] || b.key} ${b.value > 0 ? '+' : ''}${b.value}`).join(' · ');
+        box.append(br);
+      }
+
+      const render = (v) => {
+        num.textContent = Math.round(v);
+        const d = Math.round(v) - r.before;
+        dl.textContent = `(${d > 0 ? '+' : ''}${d})`;
+      };
+      const ms = reduced() ? 0 : 1400;
+      if (!ms || r.delta === 0) {
+        render(r.after);
+      } else {
+        const t0 = performance.now();
+        (function tick(now) {
+          const k = Math.min(1, (now - t0) / ms);
+          render(r.before + (r.after - r.before) * (1 - Math.pow(1 - k, 3)));
+          if (k < 1) requestAnimationFrame(tick);
+        })(t0);
+      }
+
+      const up = r.tierAfter.index > r.tierBefore.index;
+      const down = r.tierAfter.index < r.tierBefore.index;
+      if (up || down) {
+        const tc = document.createElement('div');
+        tc.className = `tier-change ${up ? 'up' : 'down'}`;
+        tc.textContent = up
+          ? `🎉 승급! ${r.tierBefore.name} → ${r.tierAfter.name}` : `⬇ 강등 ${r.tierBefore.name} → ${r.tierAfter.name}`;
+        box.append(tc);
+        play(tc, up
+          ? [{ opacity: 0, transform: 'scale(0.4)' }, { opacity: 1, transform: 'scale(1.25)', offset: 0.6 }, { opacity: 1, transform: 'scale(1)' }]
+          : [{ opacity: 0, transform: 'translateY(-14px)' }, { opacity: 1, transform: 'translateY(0)' }],
+        { duration: reduced() ? 1 : 900, delay: reduced() ? 0 : ms, fill: 'backwards' });
+        if (up && !reduced()) setTimeout(() => Anim._confetti(['#e0b341', '#fff', '#ffd966'], 2500), ms);
+      }
+    },
+
     _confetti(colors, ms) {
       const cv = document.createElement('canvas');
       fx().append(cv);

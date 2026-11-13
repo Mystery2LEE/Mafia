@@ -6,11 +6,17 @@
   <title>마피아 - 로비</title>
   <link rel="stylesheet" href="/css/base.css">
   <link rel="stylesheet" href="/css/lobby.css">
+  <link rel="stylesheet" href="/css/stats.css">
 </head>
 <body>
   <header class="topbar">
     <img src="/img/logo.svg" alt="마피아" class="topbar-logo">
     <span id="me" class="topbar-me"></span>
+    <span id="my-tier" class="tier hidden"></span>
+    <nav class="nav-links">
+      <a href="/ranking.html">랭킹</a>
+      <a href="/profile.html">내 프로필</a>
+    </nav>
     <button class="btn-sm" id="open-create" type="button">방 만들기</button>
     <button class="btn-sm ghost" id="logout" type="button">로그아웃</button>
   </header>

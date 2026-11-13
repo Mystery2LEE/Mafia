@@ -341,6 +341,8 @@ function wire() {
     A().killed?.(k);
   });
   socket.on('game:over', (r) => { lastOver = r; showOver(r); });
+  // 점수는 서버가 계산해서 본인 몫만 보내 준다 (game:over 직후 도착)
+  socket.on('game:rating', (r) => A().rating?.(r, $('over-rating')));
 
   socket.on('chat:history', ({ channel, messages }) => {
     if (!chat[channel]) return;

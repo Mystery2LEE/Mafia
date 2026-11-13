@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>마피아 - 내 프로필</title>
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/lobby.css">
+  <link rel="stylesheet" href="/css/stats.css">
+</head>
+<body>
+  <header class="topbar">
+    <img src="/img/logo.svg" alt="마피아" class="topbar-logo">
+    <span class="topbar-me"></span>
+    <nav class="nav-links">
+      <a href="/lobby.html">로비</a>
+      <a href="/ranking.html">랭킹</a>
+    </nav>
+  </header>
+  <main class="page">
+    <h2><span id="nick"></span> <span id="tier" class="tier"></span></h2>
+    <div class="stat-grid">
+      <div class="stat"><span>레이팅</span><b id="rating"></b></div>
+      <div class="stat"><span>순위</span><b id="rank"></b></div>
+      <div class="stat"><span>전적</span><b id="record"></b></div>
+      <div class="stat"><span>승률</span><b id="winrate"></b></div>
+    </div>
+    <div class="stat">
+      <span id="next-label"></span>
+      <div class="progress"><i id="progress"></i></div>
+    </div>
+
+    <h2>직업별 승률</h2>
+    <table class="table">
+      <thead><tr><th>직업</th><th class="num">경기</th><th class="num">승</th><th class="num">승률</th></tr></thead>
+      <tbody id="roles"></tbody>
+    </table>
+
+    <h2>최근 10경기</h2>
+    <table class="table">
+      <thead><tr><th>방</th><th>직업</th><th>결과</th><th class="num">레이팅</th></tr></thead>
+      <tbody id="recent"></tbody>
+    </table>
+    <div class="msg" id="msg"></div>
+  </main>
+  <script src="/js/api.js"></script>
+  <script src="/js/profile.js"></script>
+</body>
+</html>
