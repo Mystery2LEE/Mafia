@@ -148,7 +148,8 @@
 
       const spot = layer('spot');
       const av = layer('exec-avatar');
-      av.innerHTML = `<div class="exec-portrait">${Icons.avatar(k.id, 64)}</div>`; // 생성된 SVG (사용자 입력 없음)
+      const seatPortrait = c && c.querySelector('.portrait');
+      av.innerHTML = `<div class="exec-portrait">${seatPortrait ? seatPortrait.innerHTML : Icons.avatar(k.id, 64)}</div>`; // 좌석에 그려진 초상화 복사 (생성 SVG 또는 서버 사진 <img>)
       const nm = layer('exec-name', name);
       av.style.left = `${r.left + r.width / 2 - 32}px`;
       av.style.top = `${r.top + 6}px`;

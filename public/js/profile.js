@@ -9,12 +9,63 @@ const el = (tag, cls, text) => {
   return e;
 };
 
+/** 선택한 이미지를 가운데 정사각형으로 잘라 192x192 JPEG 로 줄인다 (서버 저장 용량/전송량 절약) */
+function resizeToJpeg(file, size = 192) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const s = Math.min(img.naturalWidth, img.naturalHeight);
+      if (!s) return reject(new Error('이미지를 읽을 수 없습니다.'));
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = size;
+      const ctx = cv.getContext('2d');
+      ctx.fillStyle = '#fff'; // 투명 PNG 배경
+      ctx.fillRect(0, 0, size, size);
+      ctx.drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, size, size);
+      cv.toBlob((b) => (b ? resolve(b) : reject(new Error('이미지를 변환하지 못했습니다.'))), 'image/jpeg', 0.88);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('이미지 파일이 아닙니다.')); };
+    img.src = url;
+  });
+}
+
+function setupAvatar(u) {
+  const show = (av) => {
+    $('hav').innerHTML = Icons.avatar(u.id, 92, av);
+    $('hav-reset').hidden = !av;
+  };
+  const say = (t, ok) => { const m = $('hav-msg'); m.textContent = t; m.classList.toggle('ok', !!ok); };
+  $('hav-cam').innerHTML = Icons.svg('camera', 16);
+  show(u.av);
+  const file = $('hav-file');
+  const pick = () => file.click();
+  $('hav-btn').onclick = pick;
+  $('hav-change').onclick = pick;
+  file.onchange = async () => {
+    const f = file.files[0];
+    file.value = '';
+    if (!f) return;
+    if (f.size > 15 * 1024 * 1024) return say('15MB 이하 이미지를 골라 주세요.');
+    say('올리는 중...', true);
+    try {
+      const r = await sendAvatar(await resizeToJpeg(f));
+      show(r.av);
+      say('프로필 사진을 바꿨습니다.', true);
+    } catch (e) { say(e.message); }
+  };
+  $('hav-reset').onclick = async () => {
+    try { await removeAvatar(); show(0); say('기본 사진으로 되돌렸습니다.', true); } catch (e) { say(e.message); }
+  };
+}
+
 (async () => {
   await requireLogin();
   try {
     const d = await api('/api/profile');
     const u = d.user;
-    $('hav').innerHTML = Icons.avatar(u.id, 92);
+    setupAvatar(u);
     $('nick').textContent = u.nickname;
     const tier = $('tier');
     tier.className = `tier tier-${u.tier.key}`;

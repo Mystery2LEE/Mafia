@@ -4,6 +4,7 @@ const path = require('path');
 const Database = require('better-sqlite3');
 const { createUserRepo } = require('./users');
 const { createMatchRepo } = require('./matches');
+const { createAvatarRepo } = require('./avatars');
 const ratingCfg = require('../config/rating');
 
 function openDb(file = ':memory:') {
@@ -17,6 +18,7 @@ function openDb(file = ':memory:') {
     raw, // 테스트 전용 (서비스 코드는 저장소 메서드만 사용)
     users: createUserRepo(raw),
     matches: createMatchRepo(raw, { floor: ratingCfg.floor }),
+    avatars: createAvatarRepo(raw),
     // 트랜잭션 헬퍼 (점수 반영 등에서 사용)
     transaction: (fn) => raw.transaction(fn)(),
     close: () => raw.close(),

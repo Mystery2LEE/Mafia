@@ -27,7 +27,15 @@
   </header>
   <main class="page">
     <section class="hero panel deco">
-      <div class="hav" id="hav"></div>
+      <div class="hav-wrap">
+        <button type="button" class="hav-btn" id="hav-btn" aria-label="프로필 사진 변경">
+          <div class="hav" id="hav"></div>
+          <span class="cam" id="hav-cam"></span>
+        </button>
+        <input type="file" id="hav-file" accept="image/*" hidden>
+        <div class="hav-actions"><button type="button" id="hav-change">사진 변경</button><button type="button" id="hav-reset" hidden>기본으로</button></div>
+        <div class="hav-msg" id="hav-msg" role="status"></div>
+      </div>
       <div>
         <div class="hname" id="nick"></div>
         <div class="hmeta"><span id="tier" class="tier"></span><span id="rank"></span></div>

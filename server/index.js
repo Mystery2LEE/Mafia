@@ -13,6 +13,7 @@ const { RoomManager } = require('./lobby/RoomManager');
 const { registerSockets } = require('./sockets');
 const { registerRating } = require('./rating');
 const { createStatsRouter } = require('./stats/routes');
+const { createAvatarRouter } = require('./avatar/routes');
 
 function createServer({ dbPath, jwtSecret, limits } = {}) {
   const secret = jwtSecret || process.env.JWT_SECRET;
@@ -28,6 +29,7 @@ function createServer({ dbPath, jwtSecret, limits } = {}) {
 
   app.get('/healthz', (req, res) => res.json({ ok: true })); // 배포 환경의 헬스체크용
   app.use('/api/auth', createAuthRouter({ db, jwt }));
+  app.use('/api/avatar', createAvatarRouter({ db, jwt }));
   app.use('/api', createStatsRouter({ db, jwt }));
 
   // 루트: 로그인 여부에 따라 이동
@@ -41,7 +43,7 @@ function createServer({ dbPath, jwtSecret, limits } = {}) {
   const io = new Server(server);
   io.use(socketAuth({ db, jwt }));
 
-  const rooms = new RoomManager({ limits });
+  const rooms = new RoomManager({ limits, avatarVersion: (id) => db.avatars.versionOf(id) });
   registerSockets({ io, rooms });
   registerRating({ rooms, db });
 

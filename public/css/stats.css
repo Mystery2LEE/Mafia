@@ -54,7 +54,19 @@
   display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 20px; padding: 22px;
 }
 .hero .hav { width: 92px; height: 92px; border-radius: 50%; overflow: hidden; border: 3px solid var(--gold); box-shadow: 0 0 30px rgba(212, 168, 67, 0.3); }
-.hero .hav svg { display: block; width: 100%; height: 100%; }
+.hero .hav svg, .hero .hav img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.hav-wrap { display: grid; justify-items: center; gap: 8px; }
+.hav-btn { padding: 0; border: 0; background: none; cursor: pointer; border-radius: 50%; position: relative; }
+.hav-btn:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 3px; }
+.hav-btn .cam {
+  position: absolute; right: -2px; bottom: -2px; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--gold); color: #1a1208; border: 2px solid #17120a; font-size: 0;
+}
+.hav-actions { display: flex; gap: 6px; align-items: center; font-size: 12px; }
+.hav-actions button { background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; font: inherit; padding: 2px 4px; }
+.hav-actions button:hover { color: var(--ivory); }
+.hav-msg { font-size: 12px; min-height: 16px; color: #ff8a80; text-align: center; max-width: 140px; }
+.hav-msg.ok { color: #8be0b0; }
 .hero .hname { font-family: var(--font-display); font-size: 28px; font-weight: 800; }
 .hero .hmeta { display: flex; align-items: center; gap: 10px; margin-top: 6px; color: var(--muted); font-size: 14px; flex-wrap: wrap; }
 .hero .crest-big { filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.6)); }

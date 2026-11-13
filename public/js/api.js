@@ -16,6 +16,18 @@ async function api(path, body) {
   return data;
 }
 
+/** 프로필 사진 업로드/삭제 (본문은 이미지 바이트) */
+async function sendAvatar(blob) {
+  const res = await fetch('/api/avatar', { method: 'PUT', headers: { 'Content-Type': blob.type }, body: blob, credentials: 'same-origin' });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || '사진을 올리지 못했습니다.');
+  return data;
+}
+async function removeAvatar() {
+  const res = await fetch('/api/avatar', { method: 'DELETE', credentials: 'same-origin' });
+  if (!res.ok) throw new Error('되돌리지 못했습니다.');
+}
+
 /** 로그인 필요 페이지에서 호출. 미로그인이면 로그인 페이지로 이동. */
 async function requireLogin() {
   try {

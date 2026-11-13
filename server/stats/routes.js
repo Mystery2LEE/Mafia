@@ -23,6 +23,7 @@ function createStatsRouter({ db, jwt }) {
         rank: i + 1,
         id: r.id,
         nickname: r.nickname,
+        av: db.avatars.versionOf(r.id),
         rating: r.rating,
         tier: tierOf(r.rating, cfg),
         games: r.games,
@@ -41,7 +42,7 @@ function createStatsRouter({ db, jwt }) {
     const totals = db.matches.totals(u.id);
     res.json({
       user: {
-        id: u.id, nickname: u.nickname, rating: u.rating, createdAt: u.created_at,
+        id: u.id, nickname: u.nickname, av: db.avatars.versionOf(u.id), rating: u.rating, createdAt: u.created_at,
         rank: db.matches.rankOf(u.rating),
         tier,
         nextTier: next ? { name: next.name, min: next.min } : null,

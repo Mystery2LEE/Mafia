@@ -134,7 +134,7 @@ function renderRing() {
     // 아바타: id 로 결정되는 초상화 (생성된 SVG 문자열이라 사용자 입력이 섞이지 않는다)
     const av = el('div', 'avatar');
     const portrait = el('div', 'portrait');
-    portrait.innerHTML = Icons.avatar(p.id, 64);
+    portrait.innerHTML = Icons.avatar(p.id, 64, p.av);
     av.append(portrait);
     if (dead) av.append(stampEl('dead', Icons.svg('cross', 34)));
     const log = policeLog.filter((l) => l.targetId === p.id).at(-1);

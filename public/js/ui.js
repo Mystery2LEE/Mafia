@@ -22,6 +22,7 @@
     arrowDown: '<path d="M12 5v14M6 13l6 6 6-6"/>',
     target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/>',
     fedora: '<path d="M2.5 16h19"/><path d="M6 16c0-6 2-9.5 6-9.5S18 10 18 16"/><path d="M6.2 12.5h11.6"/>',
+    camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
     door: '<path d="M10 4H5v16h5"/><path d="M14 8l4 4-4 4M18 12H9"/>',
     trophy: '<path d="M8 4h8v6a4 4 0 0 1-8 0V4z"/><path d="M8 6H4v1a3 3 0 0 0 4 3M16 6h4v1a3 3 0 0 1-4 3M12 14v4M8 20h8"/>',
     hourglass: '<path d="M6 3h12M6 21h12M7 3v4l5 5 5-5V3M7 21v-4l5-5 5 5v4"/>',
@@ -60,8 +61,12 @@
   const SUIT = ['#1b1a22', '#2a1c20', '#1c2430', '#262219', '#241b2e'];
   const TIE = ['#c9302c', '#d4a843', '#4f8fd9', '#4fae7d', '#b45cc9'];
 
-  function avatar(id, size = 56) {
+  /** av(프로필 사진 버전)가 있으면 업로드한 사진, 없으면 id 로 결정되는 생성 초상화 */
+  function avatar(id, size = 56, av = 0) {
     const n = Math.abs(Number(id) || 0);
+    if (Number(av) > 0) {
+      return `<img class="avatar-img" src="/api/avatar/${n}?v=${Number(av)}" width="${Number(size)}" height="${Number(size)}" alt="" draggable="false">`;
+    }
     const skin = SKIN[n % SKIN.length];
     const suit = SUIT[(n >> 1) % SUIT.length];
     const tie = TIE[(n >> 2) % TIE.length];

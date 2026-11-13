@@ -33,8 +33,9 @@ const KILL_TEXT = { left: '님이 게임에서 이탈했습니다.', mafia: '님
  *   'ended'  (report)           게임 종료 보고(점수 반영용)
  */
 class Game extends EventEmitter {
-  constructor({ id, title, maxPlayers, passwordHash = null, times, limits, options, mafiaCount = null }) {
+  constructor({ id, title, maxPlayers, passwordHash = null, times, limits, options, mafiaCount = null, avatarVersion = null }) {
     super();
+    this.avatarVersion = avatarVersion; // (userId) => 프로필 사진 버전 (선택)
     this.mafiaCount = mafiaCount; // 방장이 정한 마피아 수 (null 이면 인원별 기본값)
     this.customRules = false; // 이번 판이 기본 배분과 다른가 (true 면 랭킹 미반영)
     this.id = id;
@@ -630,6 +631,7 @@ class Game extends EventEmitter {
       players: [...this.players.values()].map((p) => ({
         id: p.id,
         nickname: p.nickname,
+        av: this.avatarVersion ? this.avatarVersion(p.id) || undefined : undefined,
         connected: p.connected,
         isHost: p.id === this.hostId,
         alive: playing ? p.alive : undefined,

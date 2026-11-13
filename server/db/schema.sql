@@ -29,3 +29,12 @@ CREATE TABLE IF NOT EXISTS match_players (
 
 CREATE INDEX IF NOT EXISTS idx_users_rating ON users(rating DESC);
 CREATE INDEX IF NOT EXISTS idx_match_players_user ON match_players(user_id);
+
+-- 프로필 사진 (사용자당 1장, 클라이언트에서 192x192로 줄여 올린 이미지)
+CREATE TABLE IF NOT EXISTS user_avatars (
+  user_id    INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  mime       TEXT NOT NULL,
+  data       BLOB NOT NULL,
+  version    INTEGER NOT NULL,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

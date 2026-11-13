@@ -150,6 +150,7 @@ input:disabled { opacity: 0.5; }
   content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
   background: linear-gradient(90deg, transparent, var(--gold-lo), transparent);
 }
+.avatar-img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .topbar-logo { height: 34px; filter: drop-shadow(0 2px 8px rgba(201, 48, 44, 0.5)); }
 .brand { font-family: var(--font-display); font-weight: 800; letter-spacing: 0.3em; color: var(--gold-hi); font-size: 15px; }
 .topbar-me { margin-right: auto; color: var(--muted); font-size: 14px; display: flex; align-items: center; gap: 8px; }

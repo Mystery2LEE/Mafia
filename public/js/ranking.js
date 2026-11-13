@@ -28,7 +28,7 @@ const tierBadge = (t) => {
       const pod = el('div', `pod p${p.rank}${p.isMe ? ' me' : ''}`);
       pod.append(el('div', 'medal', String(p.rank)));
       const pav = el('div', 'pav');
-      pav.innerHTML = Icons.avatar(p.id, 78);
+      pav.innerHTML = Icons.avatar(p.id, 78, p.av);
       pod.append(pav, el('div', 'nm', p.nickname), el('div', 'rt', String(p.rating)),
         el('div', 'wr', `${p.wins}승 ${p.games - p.wins}패 · ${p.winRate}%`), tierBadge(p.tier));
       podium.append(pod);
