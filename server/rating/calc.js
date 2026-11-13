@@ -13,7 +13,8 @@ function calcMatch(report, cfg = defaultCfg) {
 
   let counted = true;
   let reason = null;
-  if (total < cfg.minPlayers) { counted = false; reason = 'too_few_players'; }
+  if (report.customRules) { counted = false; reason = 'custom_rules'; } // 마피아 수를 직접 정한 판
+  else if (total < cfg.minPlayers) { counted = false; reason = 'too_few_players'; }
   else if (leavers > total * cfg.maxLeaverRatio) { counted = false; reason = 'too_many_leavers'; }
 
   const players = report.players.map((p) => {

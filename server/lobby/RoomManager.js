@@ -59,6 +59,13 @@ class RoomManager extends EventEmitter {
       return { error: 'invalid_password' };
     const normTimes = this._normalizeTimes(times);
     if (!normTimes) return { error: 'invalid_times' };
+    // 마피아 수(선택): 1 ~ 최대인원÷3. 비우면 인원별 기본 배분
+    let mafiaCount = null;
+    if (opts.mafiaCount !== undefined && opts.mafiaCount !== null && opts.mafiaCount !== '') {
+      if (!Number.isInteger(opts.mafiaCount) || opts.mafiaCount < 1 || opts.mafiaCount > defaults.maxMafia(maxPlayers))
+        return { error: 'invalid_mafia_count' };
+      mafiaCount = opts.mafiaCount;
+    }
     const doctorSelfProtect = opts.doctorSelfProtect;
     if (doctorSelfProtect !== undefined && typeof doctorSelfProtect !== 'boolean')
       return { error: 'invalid_options' };
@@ -70,6 +77,7 @@ class RoomManager extends EventEmitter {
     const game = new Game({
       id: this._newId(), title: t, maxPlayers, passwordHash, times: normTimes, limits: this.limits,
       options: doctorSelfProtect === undefined ? {} : { doctorSelfProtect },
+      mafiaCount,
     });
     this._wire(game);
     game.addPlayer(user);

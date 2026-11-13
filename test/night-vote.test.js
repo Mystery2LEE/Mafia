@@ -216,18 +216,50 @@ test('투표 동률/무투표면 처형 없이 밤으로', async () => {
   const a = await h.startedRoom(6);
   force(a.game, 'discussion');
   a.game._advance();
+  clearEvents(a.ps[2].socket);
   await vote(a.ps[0], a.ps[1]);
   await vote(a.ps[1], a.ps[0]);
   a.game._advance();
   assert.equal(a.game.phase, 'night');
   assert.equal(a.game.defendantId, null);
+  await sleep(60);
+  // 동점이면 "동점이라 이번 투표는 넘어간다"는 것과 누가 몇 표인지를 모두에게 알린다
+  const tie = events(a.ps[2], 'vote:result')[0];
+  assert.equal(tie.defendantId, null);
+  assert.equal(tie.reason, 'tie');
+  assert.deepEqual(tie.tied.map((t) => [t.id, t.nickname, t.votes]).sort(),
+    [a.ps[0], a.ps[1]].map((p) => [p.user.id, p.user.nickname, 1]).sort());
+  const tieMsg = events(a.ps[2], 'chat:message').find((m) => m.channel === 'system' && m.text.includes('동점'));
+  assert.ok(tieMsg, '동점 시스템 메시지');
+  assert.ok(tieMsg.text.includes('넘어가') && tieMsg.text.includes(a.ps[0].user.nickname));
 
   const b = await h.startedRoom(6);
   force(b.game, 'discussion');
   b.game._advance();
+  clearEvents(b.ps[0].socket);
   b.game._advance();
   assert.equal(b.game.phase, 'night');
-  assert.equal(b.game.day, 1);
+  await sleep(60);
+  // 아무도 투표하지 않았다면 동점이 아니라 "투표 없음"으로 구분해서 알린다
+  const none = events(b.ps[0], 'vote:result')[0];
+  assert.equal(none.reason, 'no_votes');
+  assert.equal(none.tied, undefined);
+  assert.ok(events(b.ps[0], 'chat:message').some((m) => m.channel === 'system' && m.text.includes('투표한 사람이 없어')));
+});
+
+test('투표 결과: 단독 최다 득표면 reason 이 없다 (변론으로 진행)', async () => {
+  const { game, ps } = await h.startedRoom(6);
+  force(game, 'discussion');
+  game._advance();
+  clearEvents(ps[0].socket);
+  await vote(ps[0], ps[3]);
+  await vote(ps[1], ps[3]);
+  game._advance();
+  await sleep(60);
+  const res = events(ps[0], 'vote:result')[0];
+  assert.equal(res.defendantId, ps[3].user.id);
+  assert.equal(res.reason, null);
+  assert.equal(game.phase, 'defense');
 });
 
 test('투표 단계: 사망자/밤/토론 중 투표 불가, 모두 투표하면 조기 종료', async () => {
@@ -326,6 +358,7 @@ test('마피아 승리: 밤마다 제거해 마피아 수 ≥ 시민 팀 수 (�
   const mafia = byRole(ps, 'mafia')[0];
   const [v1, v2] = nonMafia(ps);
 
+  game.day = 1; // 첫날 낮(투표 없음)을 이미 지난 첫 밤
   force(game, 'night');
   await night(mafia, v1);
   game._advance(); // → morning

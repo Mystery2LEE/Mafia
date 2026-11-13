@@ -1,6 +1,8 @@
 const EventEmitter = require('events');
 const crypto = require('crypto');
-const { roleCounts } = require('../config/game');
+const gameCfg = require('../config/game');
+
+const { roleCounts } = gameCfg;
 
 const CHANNELS = ['public', 'mafia', 'dead', 'system'];
 const MAX_CHAT_LEN = 200;
@@ -10,7 +12,9 @@ const PHASE_TEXT = {
   role_reveal: () => '게임이 시작되었습니다. 자신의 직업을 확인하세요.',
   night: (g) => `${g.day}일차 밤이 되었습니다.`,
   morning: () => '아침이 밝았습니다.',
-  discussion: () => '낮 토론이 시작되었습니다.',
+  discussion: (g) => (g.day === 1 && !g.limits.firstDayVote
+    ? '첫날 낮입니다. 오늘은 토론만 하고 처형 투표는 없습니다. 밤이 되면 능력이 시작됩니다.'
+    : '낮 토론이 시작되었습니다.'),
   vote: () => '투표를 시작합니다. 처형할 사람을 지목하세요.',
   defense: () => '최후 변론을 시작합니다.',
   verdict: () => '찬반 투표를 시작합니다.',
@@ -29,8 +33,10 @@ const KILL_TEXT = { left: '님이 게임에서 이탈했습니다.', mafia: '님
  *   'ended'  (report)           게임 종료 보고(점수 반영용)
  */
 class Game extends EventEmitter {
-  constructor({ id, title, maxPlayers, passwordHash = null, times, limits, options }) {
+  constructor({ id, title, maxPlayers, passwordHash = null, times, limits, options, mafiaCount = null }) {
     super();
+    this.mafiaCount = mafiaCount; // 방장이 정한 마피아 수 (null 이면 인원별 기본값)
+    this.customRules = false; // 이번 판이 기본 배분과 다른가 (true 면 랭킹 미반영)
     this.id = id;
     this.title = title;
     this.maxPlayers = maxPlayers;
@@ -129,7 +135,18 @@ class Game extends EventEmitter {
     if (this.status !== 'waiting') return { error: 'already_started' };
     if (this.players.size < this.limits.minPlayers) return { error: 'not_enough_players' };
 
-    this._assignRoles();
+    // 실제 인원 기준으로 마피아 수를 확정한다. 설정값이 상한(인원÷3)을 넘으면 줄이고,
+    // 기본 배분과 다르면 직접 정한 판으로 본다(랭킹 미반영).
+    const n = this.players.size;
+    const def = gameCfg.defaultMafia(n);
+    let mafia = def;
+    let adjusted = false;
+    if (this.mafiaCount != null) {
+      mafia = Math.min(this.mafiaCount, gameCfg.maxMafia(n));
+      adjusted = mafia !== this.mafiaCount;
+    }
+    this.customRules = mafia !== def;
+    this._assignRoles(mafia);
     this.status = 'playing';
     this.day = 0;
     this.defendantId = null;
@@ -148,11 +165,13 @@ class Game extends EventEmitter {
     this.emit('lobby');
     this.emit('room');
     this._enter('role_reveal', this.limits.fixedSec.roleReveal);
+    if (adjusted) this._system(`인원이 적어 마피아 수를 ${mafia}명으로 조정했습니다.`);
+    if (this.customRules) this._system('마피아 수가 기본 배분과 달라 이번 판은 랭킹에 반영되지 않습니다.');
     return { ok: true };
   }
 
-  _assignRoles() {
-    const counts = roleCounts(this.players.size);
+  _assignRoles(mafia) {
+    const counts = roleCounts(this.players.size, mafia);
     const roles = [];
     for (const [role, n] of Object.entries(counts)) for (let i = 0; i < n; i++) roles.push(role);
     // Fisher-Yates (암호학적 난수)
@@ -192,8 +211,9 @@ class Game extends EventEmitter {
     this._system(PHASE_TEXT[phase](this));
   }
 
+  // 하루의 순서: 낮(토론/투표) → 밤 → 아침 결과. 첫날은 낮부터 시작하므로 밤에 day 를 올리지 않는다
+  // (day 는 아침 결과 뒤 새 낮이 시작될 때 +1).
   _startNight() {
-    this.day += 1;
     this.nightActs = this._emptyNight();
     this.defendantId = null;
     this._enter('night', this.times.night);
@@ -204,7 +224,8 @@ class Game extends EventEmitter {
     const fixed = this.limits.fixedSec;
     switch (this.phase) {
       case 'role_reveal':
-        return this._startNight();
+        this.day = 1; // 첫날은 낮 토론부터: 밤에 바로 죽는 사람이 없도록
+        return this._enter('discussion', this.times.discussion);
       case 'night': {
         const result = this._resolveNight();
         this._enter('morning', fixed.morning);
@@ -212,8 +233,10 @@ class Game extends EventEmitter {
       }
       case 'morning':
         if (this._checkWin()) return;
+        this.day += 1;
         return this._enter('discussion', this.times.discussion);
       case 'discussion':
+        if (this.day === 1 && !this.limits.firstDayVote) return this._startNight();
         this.ballots.clear();
         this.emit('toRoom', 'vote:update', { tally: {} });
         return this._enter('vote', this.times.vote);
@@ -363,15 +386,21 @@ class Game extends EventEmitter {
     const tally = this._tally();
     const entries = Object.entries(tally).map(([id, n]) => [Number(id), n]);
     let defendant = null;
+    let tied = null; // 동점이면 공동 최다 득표자 [{ id, nickname, votes }]
     if (entries.length) {
       const top = Math.max(...entries.map(([, n]) => n));
       const leaders = entries.filter(([, n]) => n === top);
       if (leaders.length === 1) defendant = leaders[0][0];
+      else tied = leaders.map(([id, votes]) => ({ id, nickname: this.players.get(id).nickname, votes }));
     }
     this.defendantId = defendant;
-    this.emit('toRoom', 'vote:result', { defendantId: defendant, tally });
+    // reason: 'tie'(동점) | 'no_votes'(투표 없음) — 클라이언트가 "이번 투표는 넘어갑니다" 안내를 띄운다
+    const reason = defendant !== null ? null : tied ? 'tie' : 'no_votes';
+    this.emit('toRoom', 'vote:result', { defendantId: defendant, tally, reason, tied: tied || undefined });
     if (defendant === null) {
-      this._system('동률이거나 투표가 없어 아무도 처형되지 않습니다.');
+      this._system(tied
+        ? `동점입니다. (${tied.map((t) => `${t.nickname} ${t.votes}표`).join(', ')}) 이번 투표는 넘어가고 아무도 처형되지 않습니다.`
+        : '투표한 사람이 없어 이번 투표는 넘어가고 아무도 처형되지 않습니다.');
       return false;
     }
     this._system(`${this.players.get(defendant).nickname}님이 최후 변론 대상으로 지목되었습니다.`);
@@ -536,7 +565,7 @@ class Game extends EventEmitter {
     this.history.dead = [];
     this.defendantId = null;
     this.emit('ended', {
-      roomId: this.id, title: this.title, winner,
+      roomId: this.id, title: this.title, winner, customRules: this.customRules,
       players: [...this.players.values()].map((p) => ({
         id: p.id, role: p.role, team: p.team, alive: p.alive, left: p.left,
         executed: p.executed, stats: { ...p.stats },
@@ -553,6 +582,7 @@ class Game extends EventEmitter {
     this.verdicts.clear();
     this.policeLog = [];
     this.status = 'waiting';
+    this.customRules = false;
     this.phase = null;
     this.endsAt = null;
     this.day = 0;
@@ -573,6 +603,7 @@ class Game extends EventEmitter {
       status: this.status,
       hasPassword: this.hasPassword,
       hostNickname: this.players.get(this.hostId)?.nickname ?? '',
+      mafiaCount: this.mafiaCount,
     };
   }
 
@@ -591,6 +622,9 @@ class Game extends EventEmitter {
       hasPassword: this.hasPassword,
       times: this.times,
       hostId: this.hostId,
+      firstDayVote: this.limits.firstDayVote,
+      mafiaCount: this.mafiaCount,
+      customRules: this.customRules,
       youId: userId,
       chat: this.chatStateFor(userId),
       players: [...this.players.values()].map((p) => ({

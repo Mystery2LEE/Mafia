@@ -111,7 +111,7 @@ test('room:state 에는 다른 사람의 직업이 절대 포함되지 않는다
   assert.ok(mafiaNames.length === 2);
 });
 
-test('페이즈 루프: 직업공개 → 밤 → 아침 → 토론 → 투표 → 밤, endsAt 제공', async () => {
+test('페이즈 루프: 첫날은 낮 토론부터(투표 없음) → 밤 → 아침 → 토론 → 투표 → 밤, endsAt 제공', async () => {
   const { ps } = await startedRoom(4);
   const events = [];
   const sock = ps[0].socket;
@@ -119,8 +119,9 @@ test('페이즈 루프: 직업공개 → 밤 → 아침 → 토론 → 투표 �
   for (const e of sock.events) if (e.event === 'phase:change') events.push(e.payload);
 
   const seq = events.map((e) => e.phase);
-  assert.deepEqual(seq.slice(0, 6), ['role_reveal', 'night', 'morning', 'discussion', 'vote', 'night']);
-  assert.deepEqual(events.slice(0, 6).map((e) => e.day), [0, 1, 1, 1, 1, 2]);
+  // 첫날(day 1)은 토론 뒤 투표 없이 바로 밤으로 간다. 둘째 날부터 투표가 있다.
+  assert.deepEqual(seq.slice(0, 7), ['role_reveal', 'discussion', 'night', 'morning', 'discussion', 'vote', 'night']);
+  assert.deepEqual(events.slice(0, 7).map((e) => e.day), [0, 1, 1, 1, 2, 2, 2]);
   for (let i = 1; i < events.length; i++) assert.ok(events[i].endsAt > events[i - 1].endsAt);
   // 방 상태에도 현재 페이즈/종료시각이 있다
   const st = await waitFor(sock, 'room:state', (s) => s.phase === 'night' && s.day === 2);
@@ -181,7 +182,7 @@ test('방 2개가 동시에 진행되어도 페이즈/타이머가 섞이지 않
   const f = phases(fast);
   const s = phases(slow);
   assert.ok(f.length > 6, `빠른 방은 계속 진행 (${f.length})`);
-  assert.deepEqual(s.map((e) => e.phase), ['role_reveal', 'night']); // 느린 방은 밤에서 대기
+  assert.deepEqual(s.map((e) => e.phase), ['role_reveal', 'discussion']); // 느린 방은 첫날 토론에서 대기
   assert.equal(s[1].day, 1);
   // 각 방의 소켓은 자기 방 이벤트만 받는다
   const slowSock = slow.ps[1].socket;
