@@ -18,6 +18,12 @@
     <h2>대기실 <span id="count" class="room-count"></span></h2>
     <ul id="players" class="players"></ul>
     <p id="hint" style="color:var(--muted);font-size:13px"></p>
+    <button class="btn-sm hidden" id="start" type="button">게임 시작</button>
+    <div class="msg" id="msg" role="alert"></div>
+    <section id="game" class="hidden">
+      <p>내 직업: <strong id="my-role"></strong> <span id="my-mafia"></span></p>
+      <p>페이즈: <strong id="phase"></strong> (<span id="day"></span>일차) · 남은 시간 <span id="timer"></span>초</p>
+    </section>
   </main>
 
   <script src="/socket.io/socket.io.js"></script>
