@@ -6,7 +6,8 @@
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
-    "test": "node --test \"test/**/*.test.js\""
+    "test": "node --test \"test/**/*.test.js\" test/simulate.js",
+    "simulate": "node --test test/simulate.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -20,5 +21,8 @@
   },
   "devDependencies": {
     "socket.io-client": "^4.8.4"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
