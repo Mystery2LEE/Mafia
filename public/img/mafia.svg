@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 260"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a0d12"/><stop offset="1" stop-color="#0d0507"/></linearGradient></defs>
+<rect width="200" height="260" rx="16" fill="url(#g)"/><rect x="8" y="8" width="184" height="244" rx="12" fill="none" stroke="#c9302c" stroke-width="2"/>
+<circle cx="100" cy="70" r="46" fill="#c9302c" opacity=".18"/>
+<ellipse cx="100" cy="72" rx="62" ry="10" fill="#111"/><path d="M62 72 Q66 30 100 28 Q134 30 138 72Z" fill="#1a1a1a"/><rect x="63" y="58" width="74" height="8" fill="#c9302c"/>
+<ellipse cx="100" cy="108" rx="28" ry="32" fill="#2a2a2a"/><rect x="74" y="96" width="52" height="10" rx="5" fill="#000"/>
+<path d="M50 200 Q52 150 100 142 Q148 150 150 200Z" fill="#151515"/><path d="M92 142 L100 175 L108 142Z" fill="#c9302c"/>
+<text x="100" y="232" font-family="sans-serif" font-size="26" font-weight="700" fill="#f2d7d5" text-anchor="middle">마피아</text></svg>

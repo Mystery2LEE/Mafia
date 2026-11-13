@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 260"><defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b3b2e"/><stop offset="1" stop-color="#04130f"/></linearGradient></defs>
+<rect width="200" height="260" rx="16" fill="url(#g)"/><rect x="8" y="8" width="184" height="244" rx="12" fill="none" stroke="#10b981" stroke-width="2"/>
+<circle cx="100" cy="105" r="64" fill="#10b981" opacity=".15"/><circle cx="100" cy="105" r="50" fill="#ecfdf5"/>
+<rect x="88" y="70" width="24" height="70" rx="4" fill="#10b981"/><rect x="65" y="93" width="70" height="24" rx="4" fill="#10b981"/>
+<path d="M40 175 q10 -12 20 0 t20 0 t20 0 t20 0 t20 0 t20 0" fill="none" stroke="#6ee7b7" stroke-width="3"/>
+<text x="100" y="232" font-family="sans-serif" font-size="26" font-weight="700" fill="#d1fae5" text-anchor="middle">의사</text></svg>
