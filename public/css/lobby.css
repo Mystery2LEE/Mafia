@@ -45,3 +45,17 @@ details summary { cursor: pointer; }
 /* 티어 문장(topbar) */
 #my-crest { display: inline-flex; }
 #me-rating { color: var(--gold-hi); font-variant-numeric: tabular-nums; }
+
+/* ----- 모바일 ----- */
+.room-item { grid-template-columns: minmax(0, 1fr) auto; }
+.room-item .btn-sm { white-space: nowrap; flex: none; }
+.room-item > div:first-child { min-width: 0; }
+.lobby-head > div:first-child { min-width: 0; }
+@media (max-width: 640px) {
+  .lobby { padding: 18px 12px 48px; }
+  .lobby-head h2 { font-size: 24px; }
+  .lobby-head .btn-sm { flex: none; white-space: nowrap; }
+  .room-item { padding: 14px 12px 14px 18px; gap: 10px; }
+  .room-title { font-size: 16px; }
+  .times { grid-template-columns: 1fr; }
+}

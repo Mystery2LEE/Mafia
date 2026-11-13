@@ -174,3 +174,15 @@ dialog h3 { font-size: 20px; color: var(--gold-hi); }
 @media (prefers-reduced-motion: reduce) {
   .btn, .btn-sm, .tabs button, input { transition: none; }
 }
+
+/* ----- 모바일: 상단 바가 넘치지 않도록 줄바꿈 ----- */
+.topbar-me { min-width: 0; }
+.topbar-me b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+@media (max-width: 640px) {
+  .topbar { flex-wrap: wrap; gap: 6px 10px; padding: 8px 12px; }
+  .brand { letter-spacing: 0.2em; }
+  .topbar-me { order: 2; margin-left: auto; margin-right: 0; flex: 0 1 auto; max-width: 60%; }
+  .nav-links { order: 3; flex: 1 1 100%; flex-wrap: wrap; gap: 4px; align-items: center; }
+  .nav-links a { padding: 6px 9px; font-size: 13px; white-space: nowrap; }
+  .nav-links .skin-pick { margin-left: auto; }
+}

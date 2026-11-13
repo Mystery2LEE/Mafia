@@ -82,3 +82,15 @@
 .chip.lose, .chip.left { color: #ff9a93; background: rgba(201, 48, 44, 0.16); }
 .muted { color: var(--muted); }
 .empty-note { padding: 18px; text-align: center; color: var(--muted); font-size: 14px; border: 1px dashed var(--line); border-radius: var(--radius); }
+
+/* 모바일: 표 머리글/전적이 글자 단위로 쪼개지지 않게 */
+table th, table td { white-space: nowrap; }
+table td:nth-child(2) { max-width: 9em; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 640px) {
+  table th, table td { padding-left: 6px; padding-right: 6px; font-size: 13px; }
+  .table th:nth-child(6), .table td:nth-child(6) { display: none; } /* 승률은 모바일에서 생략(전적으로 대체) */
+}
+@media (max-width: 640px) {
+  .table td:nth-child(2) { max-width: 6.5em; }
+  .table { width: 100%; table-layout: auto; }
+}
