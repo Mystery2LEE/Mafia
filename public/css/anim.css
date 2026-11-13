@@ -1,0 +1,2 @@
+/* 연출 스타일 (C5에서 구현) */
+.fx { position: fixed; inset: 0; pointer-events: none; z-index: 40; }

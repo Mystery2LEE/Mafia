@@ -108,6 +108,7 @@ async function init() {
       title: $('c-title').value,
       maxPlayers: Number($('c-max').value),
       password: $('c-pw').value || undefined,
+      doctorSelfProtect: $('c-doctor').checked,
       times: Object.keys(times).length ? times : undefined,
     }, (res) => {
       if (res.ok) return (location.href = '/room.html');
