@@ -64,12 +64,24 @@ class RoomManager extends EventEmitter {
     // await 도중에 다른 방에 들어갔을 수 있으므로 다시 확인
     if (this.userRoom.has(user.id)) return { error: 'already_in_room', roomId: this.userRoom.get(user.id) };
 
-    const game = new Game({ id: this._newId(), title: t, maxPlayers, passwordHash, times: normTimes });
+    const game = new Game({
+      id: this._newId(), title: t, maxPlayers, passwordHash, times: normTimes, limits: this.limits,
+    });
+    this._wire(game);
     game.addPlayer(user);
     this.rooms.set(game.id, game);
     this.userRoom.set(user.id, game.id);
     this.emit('lobby');
     return { room: game };
+  }
+
+  /** Game이 내보내는 이벤트를 RoomManager 이벤트로 전달 (소켓 계층은 RoomManager만 구독한다) */
+  _wire(game) {
+    game.on('room', () => this.emit('room', game.id));
+    game.on('lobby', () => this.emit('lobby'));
+    game.on('toRoom', (event, payload) => this.emit('toRoom', game.id, event, payload));
+    game.on('toUser', (userId, event, payload) => this.emit('toUser', userId, event, payload));
+    game.on('ended', (report) => this.emit('ended', report));
   }
 
   async join(user, roomId, password) {
@@ -106,7 +118,7 @@ class RoomManager extends EventEmitter {
     if (!game) return null;
     this._clearGrace(userId);
     this.userRoom.delete(userId);
-    const { empty } = game.removePlayer(userId);
+    const { empty } = game.leave(userId);
     if (empty) {
       game.destroy();
       this.rooms.delete(game.id);

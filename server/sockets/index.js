@@ -15,6 +15,8 @@ function registerSockets({ io, rooms }) {
     if (!game) return;
     for (const userId of game.players.keys()) sendRoomState(game, userId);
   });
+  rooms.on('toRoom', (roomId, event, payload) => io.to(roomChannel(roomId)).emit(event, payload));
+  rooms.on('toUser', (userId, event, payload) => userSockets.get(userId)?.emit(event, payload));
 
   const reply = (ack, payload) => { if (typeof ack === 'function') ack(payload); };
 
@@ -61,6 +63,12 @@ function registerSockets({ io, rooms }) {
       if (r.error) return reply(ack, { error: r.error, roomId: r.roomId });
       enterRoom(r.room);
       reply(ack, { ok: true, roomId: r.room.id });
+    });
+
+    socket.on('game:start', (ack) => {
+      const g = rooms.getRoomOf(user.id);
+      if (!g) return reply(ack, { error: 'not_in_room' });
+      reply(ack, g.start(user.id));
     });
 
     socket.on('room:leave', (ack) => {
