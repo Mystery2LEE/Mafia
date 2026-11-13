@@ -15,16 +15,16 @@ test('티어 경계값', () => {
   const name = (r) => tierOf(r).name;
   assert.equal(name(0), '똘마니');
   assert.equal(name(1000), '똘마니'); // 가입 직후 점수
-  assert.equal(name(1099), '똘마니');
-  assert.equal(name(1100), '건달');
-  assert.equal(name(1249), '건달');
-  assert.equal(name(1250), '행동대장');
-  assert.equal(name(1399), '행동대장');
-  assert.equal(name(1400), '간부');
-  assert.equal(name(1599), '간부');
-  assert.equal(name(1600), '보스');
-  assert.equal(name(1799), '보스');
-  assert.equal(name(1800), '대부');
+  assert.equal(name(1199), '똘마니');
+  assert.equal(name(1200), '건달');
+  assert.equal(name(1399), '건달');
+  assert.equal(name(1400), '행동대장');
+  assert.equal(name(1599), '행동대장');
+  assert.equal(name(1600), '간부');
+  assert.equal(name(1799), '간부');
+  assert.equal(name(1800), '보스');
+  assert.equal(name(1999), '보스');
+  assert.equal(name(2000), '대부');
   assert.equal(name(9999), '대부');
 });
 
@@ -260,7 +260,7 @@ test('랭킹/프로필 API: 로그인 필요, 상위 50, 승률/직업별/최근
   const pf = await (await fetch(`${srv.url}/api/profile`, { headers: { cookie: u.cookie } })).json();
   assert.equal(pf.user.nickname, u.user.nickname);
   assert.equal(pf.user.rating, 1000 + 8 * 30 - 4 * 10);
-  assert.equal(pf.user.tier.name, '건달'); // 1200점
+  assert.equal(pf.user.tier.name, '건달'); // 1200점 (건달 시작선)
   assert.equal(pf.totals.games, 12);
   assert.equal(pf.recent.length, 10);
   assert.equal(pf.recent[0].roomTitle, 'r11'); // 최신 경기 순
