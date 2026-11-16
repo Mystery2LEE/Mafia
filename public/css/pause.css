@@ -60,9 +60,22 @@ html[data-skin] .pause-card .pause-auto { color: var(--sk-text); }
 .fk-tools .send { width: 32px; height: 32px; border-radius: 8px; background: #e8a58f; color: #fff; display: grid; place-items: center; font-size: 16px; }
 .fk-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 18px; }
 .fk-chips span { border: 1px solid #e0ded2; border-radius: 99px; padding: 7px 14px; font-size: 13.5px; color: #5d5b52; background: #faf9f5; }
+.fk-recents .fk-back { color: #c96442; font-weight: 600; cursor: pointer; }
 @media (max-width: 760px) {
-  .fk-side { display: none; }
+  /* 좁은 화면: 사이드바 대신 위쪽 띠에 로고와 '돌아가기'만 보여 준다 */
+  .fake-claude.on { flex-direction: column; }
+  .fk-side { width: 100%; flex-direction: row; align-items: center; justify-content: space-between; padding: 6px 10px; border-right: 0; border-bottom: 1px solid #e8e6dc; }
+  .fk-brand { padding: 4px 6px; }
+  .fk-nav, .fk-side h6, .fk-me, .fk-recents div:not(.fk-back) { display: none; }
   .fk-hello { flex-direction: column; gap: 8px; }
 }
 
 #pause-btn[hidden], .more-btn[hidden] { display: none !important; }
+
+/* 좁은 화면: 상단 바가 넘치지 않도록 일시정지/나가기는 아이콘만 보여 준다 */
+@media (max-width: 560px) {
+  #pause-btn .pb-txt { display: none; }
+  #pause-btn { padding-left: 9px; padding-right: 9px; gap: 3px; }
+  #leave { font-size: 0; gap: 0; padding-left: 9px; padding-right: 9px; }
+  #leave .ico { font-size: initial; }
+}

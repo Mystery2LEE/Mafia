@@ -159,6 +159,14 @@ body.night .felt { background: radial-gradient(ellipse at 50% 40%, #153a42 0%, #
 /* 시간 단축 / 오늘 건너뛰기 */
 .skipbar { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
 .skipbar:empty { display: none; }
+/* 유령 시점: 밤 행동 현황 */
+.ghost-info { display: grid; gap: 3px; margin-top: 4px; font-size: 12.5px; color: var(--ivory); text-align: center; }
+.ghost-info:empty { display: none; }
+.ghost-info .gi-title { font-size: 11px; letter-spacing: 0.2em; color: var(--gold); }
+.ghost-info .gi-row b { color: var(--gold-hi); }
+.ghost-info .gi-row.mafia b { color: #ff8f86; }
+.ghost-info .gi-row.none { color: var(--muted); }
+@media (max-width: 640px) { .ghost-info { font-size: 11.5px; } }
 .skipbtn {
   display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 99px; cursor: pointer;
   font: inherit; font-size: 12px; font-weight: 600; color: var(--ivory); background: rgba(0, 0, 0, 0.28);

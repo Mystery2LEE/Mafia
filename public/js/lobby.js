@@ -4,6 +4,8 @@ const ERRORS = {
   not_found: '방이 존재하지 않습니다.',
   full: '방이 가득 찼습니다.',
   in_game: '이미 게임이 진행 중인 방입니다.',
+  not_playing: '지금은 관전할 수 없는 방입니다. 입장해 주세요.',
+  spectators_full: '관전 자리가 가득 찼습니다.',
   bad_password: '비밀번호가 올바르지 않습니다.',
   already_in_room: '이미 다른 방에 참여 중입니다.',
   invalid_title: '제목을 1~30자로 입력하세요.',
@@ -20,6 +22,7 @@ const errText = (code) => ERRORS[code] || '요청에 실패했습니다.';
 
 let socket;
 let pendingRoomId = null;
+let pendingSpectate = false;
 
 const el = (tag, cls, text) => {
   const e = document.createElement(tag);
@@ -51,31 +54,35 @@ function renderRooms(rooms) {
     const badge = el('span', `badge ${r.status}`, r.status === 'waiting' ? '대기중' : '게임중');
     meta.append(badge, seats, count, host);
     if (r.mafiaCount != null) meta.append(el('span', 'badge custom', `마피아 ${r.mafiaCount}명 설정`));
+    if (r.spectatorCount) meta.append(el('span', '', `관전 ${r.spectatorCount}명`));
     info.append(title, meta);
 
-    const btn = el('button', 'btn-sm', r.status === 'waiting' ? '입장' : '진행 중');
-    btn.disabled = r.status !== 'waiting' || r.playerCount >= r.maxPlayers;
-    btn.onclick = () => tryJoin(r);
+    // 대기 중이면 입장, 게임 중이면 관전
+    const watching = r.status !== 'waiting';
+    const btn = el('button', watching ? 'btn-sm ghost' : 'btn-sm', watching ? '관전' : '입장');
+    btn.disabled = watching ? false : r.playerCount >= r.maxPlayers;
+    btn.onclick = () => tryJoin(r, watching);
 
     li.append(info, btn);
     list.append(li);
   }
 }
 
-function tryJoin(room) {
+function tryJoin(room, spectate = false) {
   $('msg').textContent = '';
   if (room.hasPassword) {
     pendingRoomId = room.id;
+    pendingSpectate = spectate;
     $('pw-input').value = '';
     $('pw-msg').textContent = '';
     $('pw-dialog').showModal();
   } else {
-    join(room.id);
+    join(room.id, undefined, undefined, spectate);
   }
 }
 
-function join(roomId, password, onError) {
-  socket.emit('room:join', { roomId, password }, (res) => {
+function join(roomId, password, onError, spectate = false) {
+  socket.emit(spectate ? 'room:spectate' : 'room:join', { roomId, password }, (res) => {
     if (res.ok || res.error === 'already_joined') return (location.href = '/room.html');
     if (onError) return onError(errText(res.error));
     $('msg').textContent = errText(res.error);
@@ -155,7 +162,7 @@ async function init() {
 
   $('pw-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    join(pendingRoomId, $('pw-input').value, (text) => { $('pw-msg').textContent = text; });
+    join(pendingRoomId, $('pw-input').value, (text) => { $('pw-msg').textContent = text; }, pendingSpectate);
   });
 }
 

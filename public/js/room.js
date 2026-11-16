@@ -12,8 +12,8 @@ const PHASE_ICONS = {
   waiting: 'users', role_reveal: 'eye', night: 'moon', morning: 'sun', discussion: 'chat',
   vote: 'ballot', defense: 'mic', verdict: 'scales', execution: 'gavel',
 };
-const TAB_NAMES = { public: '전체', mafia: '마피아', dead: '사망자', system: '알림' };
-const TAB_ICONS = { public: 'chat', mafia: 'fedora', dead: 'ghost', system: 'bell' };
+const TAB_NAMES = { public: '전체', mafia: '마피아', dead: '사망자', system: '알림', spectator: '관전석' };
+const TAB_ICONS = { public: 'chat', mafia: 'fedora', dead: 'ghost', system: 'bell', spectator: 'eye' };
 const ERRORS = {
   not_host: '방장만 시작할 수 있습니다.', not_enough_players: '최소 4명이 필요합니다.',
   already_started: '이미 시작되었습니다.', forbidden: '지금은 할 수 없습니다.',
@@ -22,6 +22,7 @@ const ERRORS = {
   invalid_text: '1~200자로 입력하세요.', invalid_vote: '잘못된 요청입니다.',
   paused: '일시정지 중입니다.', already_paused: '이미 일시정지 중입니다.', pause_limit: '일시정지 횟수를 모두 썼습니다.',
   not_paused: '일시정지 상태가 아닙니다.',
+  not_playing: '진행 중인 방만 관전할 수 있습니다.', not_waiting: '대기실에서만 참가할 수 있습니다.', full: '방이 가득 찼습니다.',
   already_hurried: '이미 시간이 줄어들었습니다.', no_vote_today: '첫날은 투표가 없어 건너뛸 것이 없습니다.',
 };
 const RING = 113.1; // 타이머 원의 둘레(2πr, r=18)
@@ -29,8 +30,8 @@ const RING = 113.1; // 타이머 원의 둘레(2πr, r=18)
 let socket;
 let state = null;
 let gotState = false;
-const chat = { public: [], mafia: [], dead: [], system: [] };
-const unread = { public: 0, mafia: 0, dead: 0, system: 0 };
+const chat = { public: [], mafia: [], dead: [], system: [], spectator: [] };
+const unread = { public: 0, mafia: 0, dead: 0, system: 0, spectator: 0 };
 let activeTab = 'public';
 let tally = {};
 let revealed = {}; // userId -> role (투표 처형으로 공개된 직업)
@@ -56,9 +57,10 @@ function render() {
   document.body.classList.toggle('ghost', playing && !!state.you && !state.you.alive); // 사망자 화면 채도 감소
   $('room-title').textContent = state.title;
   const custom = state.mafiaCount != null ? ` · 마피아 ${state.mafiaCount}명 설정` : '';
-  $('room-sub').textContent = playing
-    ? `${state.day}일차 · 생존 ${state.players.filter((p) => !p.left && p.alive).length}명${state.customRules ? ' · 랭킹 미반영' : ''}`
-    : `대기실 · ${state.players.length}/${state.maxPlayers}명${state.hasPassword ? ' · 비밀방' : ''}${custom}`;
+  const watchers = state.spectatorCount ? ` · 관전 ${state.spectatorCount}명` : '';
+  $('room-sub').textContent = (playing
+    ? `${state.spectator ? '관전 중 · ' : ''}${state.day}일차 · 생존 ${state.players.filter((p) => !p.left && p.alive).length}명${state.customRules ? ' · 랭킹 미반영' : ''}`
+    : `대기실 · ${state.players.length}/${state.maxPlayers}명${state.hasPassword ? ' · 비밀방' : ''}${custom}`) + watchers;
   $('phase-label').textContent = playing ? (PHASE_NAMES[phase] || '') : '대기실';
   $('phase-ico').innerHTML = Icons.svg(PHASE_ICONS[playing ? phase : 'waiting'] || 'users', 20);
 
@@ -68,7 +70,37 @@ function render() {
   renderTabs();
   renderLog();
   renderChatInput();
+  renderGhostInfo();
   Pause.sync(state);
+}
+
+/** 유령 시점: 밤 동안 마피아 지목 / 의사 보호 / 경찰 조사 현황 (서버가 사망자에게만 보낸다) */
+function renderGhostInfo() {
+  const box = $('ghost-info');
+  box.replaceChildren();
+  const night = state.reveal?.night;
+  if (state.status !== 'playing' || !night) return;
+  box.append(el('div', 'gi-title', state.spectator ? '관전자의 시선' : '유령의 시선'));
+  const row = (cls, role, who, text) => {
+    const r = el('div', `gi-row ${cls}`);
+    r.append(el('b', '', role), document.createTextNode(` ${who} ${text}`));
+    return r;
+  };
+  const roles = state.reveal.roles;
+  const idOf = (r) => Object.keys(roles).map(Number).find((id) => roles[id] === r && state.players.find((p) => p.id === id)?.alive);
+  if (night.mafia.length) {
+    for (const m of night.mafia) box.append(row('mafia', '마피아', `${nickOf(m.from)} →`, `${nickOf(m.to)} 지목`));
+  } else {
+    box.append(row('none', '마피아', '', '아직 고르지 않음'));
+  }
+  const doc = idOf('doctor');
+  if (doc !== undefined) {
+    box.append(night.doctor != null ? row('', '의사', `${nickOf(doc)} →`, `${nickOf(night.doctor)} 보호`) : row('none', '의사', '', '아직 고르지 않음'));
+  }
+  const pol = idOf('police');
+  if (pol !== undefined) {
+    box.append(night.police != null ? row('', '경찰', `${nickOf(pol)} →`, `${nickOf(night.police)} 조사`) : row('none', '경찰', '', '아직 고르지 않음'));
+  }
 }
 
 function renderRole() {
@@ -169,7 +201,9 @@ function renderRing() {
 
     let tag = '';
     let tagCls = 'ptag';
-    if (revealed[p.id]) { tag = ROLE_NAMES[revealed[p.id]]; tagCls += ' role'; }
+    const ghostRole = state.reveal?.roles[p.id];
+    if (ghostRole && p.id !== state.youId) { tag = ROLE_NAMES[ghostRole]; tagCls += ghostRole === 'mafia' ? ' mafia' : ' role'; }
+    else if (revealed[p.id]) { tag = ROLE_NAMES[revealed[p.id]]; tagCls += ' role'; }
     else if (mates.some((m) => m.id === p.id) && p.id !== state.youId) { tag = '마피아 동료'; tagCls += ' mafia'; }
     else if (Object.values(picks).includes(p.id) && state.phase === 'night') { tag = '지목됨'; tagCls += ' mafia'; }
     else if (!p.connected) tag = '연결 끊김';
@@ -201,6 +235,20 @@ function renderActions() {
   const msg = $('center-msg');
   const you = state.you;
 
+  if (state.spectator) {
+    if (state.status === 'waiting') {
+      const full = state.players.length >= state.maxPlayers;
+      const pb = el('button', 'btn-sm');
+      pb.innerHTML = `${Icons.svg('users', 16)}참가하기`;
+      pb.disabled = full;
+      pb.onclick = () => socket.emit('room:play', {}, (res) => { if (res?.error) flash(ERRORS[res.error] || '참가할 수 없습니다.'); });
+      box.append(pb);
+      msg.textContent = full ? '방이 가득 차 참가할 수 없습니다. 자리가 나면 참가할 수 있습니다.' : '대기실입니다. 참가하기를 누르면 자리에 앉습니다.';
+    } else {
+      msg.textContent = '관전 중입니다. 모든 직업과 밤 행동이 보입니다. 참가자에게 알려주면 안 돼요!';
+    }
+    return;
+  }
   if (state.status === 'waiting') {
     const n = state.players.length;
     const me = state.players.find((p) => p.id === state.youId);
@@ -295,7 +343,7 @@ function renderTabs() {
   tabs.replaceChildren();
   const read = state.chat.read;
   if (!read.includes(activeTab)) activeTab = 'public';
-  for (const ch of ['public', 'mafia', 'dead', 'system']) {
+  for (const ch of ['public', 'mafia', 'dead', 'system', 'spectator']) {
     if (!read.includes(ch)) continue;
     const b = el('button', ch === activeTab ? 'active' : '');
     b.type = 'button';
@@ -402,6 +450,7 @@ function wire() {
   socket.on('room:state', (s) => {
     const wasAlive = state?.you?.alive;
     const prevStatus = state?.status;
+    if (s.spectator && !state?.spectator) activeTab = 'spectator'; // 관전자는 관전석 채팅부터
     state = s;
     gotState = true;
     if (s.tally) tally = s.tally;
@@ -444,6 +493,7 @@ function wire() {
     if (k.role) revealed[k.id] = k.role;
     A().killed?.(k);
   });
+  socket.on('room:closed', () => { location.href = '/lobby.html'; }); // 참가자가 모두 나가 방이 닫힘
   socket.on('game:over', (r) => showOver(r));
   // 점수는 서버가 계산해서 본인 몫만 보내 준다 (game:over 직후 도착)
   socket.on('game:rating', (r) => A().rating?.(r, $('over-rating')));
@@ -482,6 +532,7 @@ function showOver(r) {
     list.append(li);
   });
   $('over-rating').textContent = '';
+  $('over-again').hidden = !!state?.spectator; // 관전자는 다시 하기 대신 대기실에서 참가한다
   $('over').classList.remove('hidden');
   A().gameOver?.(r);
 }

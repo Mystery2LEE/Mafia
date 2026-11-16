@@ -23,7 +23,7 @@ const Pause = (() => {
       <aside class="fk-side">
         <div class="fk-brand">${ASTERISK}<span>Claude</span></div>
         <div class="fk-nav">
-          <div class="new"><i>+</i>새 채팅</div>
+          <div class="new"><i><svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M6 1.8v8.4M1.8 6h8.4" stroke="#fff" stroke-width="1.7" stroke-linecap="round" fill="none"/></svg></i>새 채팅</div>
           <div><span class="ic">▤</span>채팅</div>
           <div><span class="ic">▣</span>프로젝트</div>
           <div><span class="ic">◇</span>아티팩트</div>
@@ -37,11 +37,17 @@ const Pause = (() => {
         <div class="fk-hello">${ASTERISK}<h1></h1></div>
         <div class="fk-box">
           <textarea rows="2" placeholder="오늘 어떤 도움이 필요하세요?"></textarea>
-          <div class="fk-tools"><span class="plus">+</span><span class="model">Sonnet ⌄</span><span class="send">↑</span></div>
+          <div class="fk-tools"><span class="plus"><svg viewBox="0 0 14 14" width="14" height="14" aria-hidden="true"><path d="M7 2v10M2 7h10" stroke="#5d5b52" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg></span><span class="model">Sonnet ⌄</span><span class="send">↑</span></div>
         </div>
         <div class="fk-chips"><span>✎ 글쓰기</span><span>🎓 학습</span><span>&lt;/&gt; 코드</span><span>☕ 일상</span></div>
       </main>`;
     const rec = root.querySelector('.fk-recents');
+    // 최근 항목 맨 위의 '돌아가기': 누르면 게임 화면으로 돌아간다
+    const back = document.createElement('div');
+    back.className = 'fk-back';
+    back.textContent = '돌아가기';
+    back.addEventListener('click', hide);
+    rec.append(back);
     for (const t of RECENTS) { const d = document.createElement('div'); d.textContent = t; rec.append(d); }
     root.querySelector('.fk-name').textContent = '사용자';
     root.querySelector('.fk-me b').textContent = 'U';
@@ -95,14 +101,34 @@ const Pause = (() => {
 
   const fmt = (ms) => `${Math.floor(ms / 60000)}:${String(Math.floor(ms / 1000) % 60).padStart(2, '0')}`;
 
+  /** 버튼 모양을 '일시정지' / '화면 가리기'로 바꾼다 */
+  function setMode(btn, mode) {
+    if (btn.dataset.mode === mode) return;
+    btn.dataset.mode = mode;
+    btn.querySelector('.pb-txt').textContent = mode === 'hide' ? '화면 가리기' : '일시정지';
+    btn.title = mode === 'hide' ? '화면을 가립니다 (Esc)' : '게임을 멈추고 화면을 가립니다 (Esc)';
+    const ico = btn.querySelector('svg');
+    if (ico) ico.outerHTML = Icons.svg(mode === 'hide' ? 'eye' : 'pause', 16);
+  }
+
   /** room:state 가 올 때마다 호출 */
   function sync(st) {
     const btn = $('pause-btn');
     const p = st.status === 'playing' ? st.pause : null;
-    btn.hidden = !p;
-    if (p) {
-      btn.querySelector('.n').textContent = p.active ? '' : ` (${p.left})`;
-      btn.disabled = !p.active && p.left <= 0;
+    $('pause-resume').hidden = !!st.spectator;
+    if (st.spectator) {
+      // 관전자는 게임을 멈출 수 없으므로 같은 자리에 '화면 가리기'(위장 화면만)를 둔다
+      setMode(btn, 'hide');
+      btn.hidden = false;
+      btn.disabled = false;
+      btn.querySelector('.n').textContent = '';
+    } else {
+      setMode(btn, 'pause');
+      btn.hidden = !p;
+      if (p) {
+        btn.querySelector('.n').textContent = p.active ? '' : ` (${p.left})`;
+        btn.disabled = !p.active && p.left <= 0;
+      }
     }
     $('pause-ov').classList.toggle('hidden', !p?.active);
     if (p?.active) {

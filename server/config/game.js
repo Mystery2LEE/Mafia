@@ -15,6 +15,8 @@ module.exports = {
     hurrySec: 5,
     // 일시정지: 1인당 한 판에 쓸 수 있는 횟수, 한 번에 멈출 수 있는 최대 시간(초)
     pausesPerPlayer: 2,
+    // 진행 중인 방을 지켜볼 수 있는 관전자 수 상한
+    maxSpectators: 8,
     pauseMaxSec: 300,
     // 1초가 몇 ms인가. 테스트에서 줄여서 타이머를 빠르게 돌린다.
     secondMs: 1000,

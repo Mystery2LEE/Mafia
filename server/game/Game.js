@@ -4,7 +4,7 @@ const gameCfg = require('../config/game');
 
 const { roleCounts } = gameCfg;
 
-const CHANNELS = ['public', 'mafia', 'dead', 'system'];
+const CHANNELS = ['public', 'mafia', 'dead', 'system', 'spectator'];
 const MAX_CHAT_LEN = 200;
 const HISTORY_CAP = 200;
 
@@ -73,11 +73,13 @@ class Game extends EventEmitter {
     this.pausesUsed = new Map(); // userId -> 이번 판에 쓴 횟수 (남용 방지)
     // 다시 하기: 대기실에서 '한 판 더'에 동의한 사람들. 전원이 동의하면 자동 시작
     this.rematch = new Set();
+    // 관전자: 진행 중인 판을 공개 정보만 보면서 지켜본다. 참가자가 아니므로 직업/투표/능력과 무관하다.
+    this.spectators = new Map(); // userId -> { id, nickname, connected, chatTimes }
   }
 
   _emptyNight() { return { mafia: new Map(), doctor: null, police: null }; }
 
-  _emptyHistory() { return { public: [], mafia: [], dead: [], system: [] }; }
+  _emptyHistory() { return { public: [], mafia: [], dead: [], system: [], spectator: [] }; }
 
   get hasPassword() { return !!this.passwordHash; }
   get isFull() { return this.players.size >= this.maxPlayers; }
@@ -94,13 +96,32 @@ class Game extends EventEmitter {
     };
   }
 
+  addSpectator(user) {
+    this.spectators.set(user.id, { id: user.id, nickname: user.nickname, connected: true, chatTimes: [] });
+  }
+
+  isSpectator(userId) { return this.spectators.has(userId); }
+
+  /** 대기실로 돌아온 방에서 관전자가 참가자가 된다 */
+  promoteSpectator(userId) {
+    const s = this.spectators.get(userId);
+    if (!s) return { error: 'forbidden' };
+    if (this.status !== 'waiting') return { error: 'not_waiting' };
+    if (this.isFull) return { error: 'full' };
+    this.spectators.delete(userId);
+    this.addPlayer({ id: s.id, nickname: s.nickname });
+    this.emit('lobby');
+    this.emit('room');
+    return { ok: true };
+  }
+
   addPlayer(user) {
     this.players.set(user.id, this._newPlayer(user));
     if (this.hostId === null) this.hostId = user.id;
   }
 
   setConnected(userId, connected) {
-    const p = this.players.get(userId);
+    const p = this.players.get(userId) ?? this.spectators.get(userId);
     if (p) p.connected = connected;
   }
 
@@ -110,6 +131,10 @@ class Game extends EventEmitter {
    * @returns {{ empty: boolean }}
    */
   leave(userId) {
+    if (this.spectators.delete(userId)) {
+      this.emit('lobby');
+      return { empty: this._remaining() === 0 };
+    }
     const p = this.players.get(userId);
     if (!p) return { empty: this._remaining() === 0 };
     this.rematch.delete(userId);
@@ -424,6 +449,8 @@ class Game extends EventEmitter {
       if (targetId === userId) return { error: 'invalid_target' };
       this.nightActs.police = targetId;
     }
+    // 사망자와 관전자는 밤 행동을 실시간으로 지켜본다 (볼 사람이 있을 때만 상태를 다시 보낸다)
+    if (this.spectators.size > 0 || [...this.players.values()].some((p) => !p.alive && !p.left)) this.emit('room');
     return { ok: true };
   }
 
@@ -614,6 +641,8 @@ class Game extends EventEmitter {
 
   /** 이 유저가 읽을 수 있는 채널. 소켓 계층은 이 목록대로 Socket.IO room에 넣고 뺀다. */
   readChannels(userId) {
+    // 관전자는 유령과 같은 전지적 시점: 전 채널을 읽을 수 있고, 쓰기는 관전석만 가능하다
+    if (this.spectators.has(userId)) return this.status === 'playing' ? ['public', 'system', 'mafia', 'dead', 'spectator'] : ['public', 'system', 'spectator'];
     const p = this.players.get(userId);
     if (!p || p.left) return [];
     const ch = ['public', 'system'];
@@ -626,6 +655,7 @@ class Game extends EventEmitter {
 
   /** 지금 이 유저가 해당 채널에 쓸 수 있는가 */
   canWrite(userId, channel) {
+    if (this.spectators.has(userId)) return channel === 'spectator' && !this.paused; // 관전자끼리만 대화
     const p = this.players.get(userId);
     if (!p || p.left) return false;
     if (this.status === 'waiting') return channel === 'public'; // 대기실에서는 전체 채팅만
@@ -645,7 +675,7 @@ class Game extends EventEmitter {
   }
 
   chat(userId, channel, text) {
-    const p = this.players.get(userId);
+    const p = this.players.get(userId) ?? this.spectators.get(userId);
     if (!p || p.left) return { error: 'not_in_room' };
     if (this.paused) return { error: 'paused' };
     if (!CHANNELS.includes(channel)) return { error: 'invalid_channel' };
@@ -681,7 +711,7 @@ class Game extends EventEmitter {
   chatStateFor(userId) {
     return {
       read: this.readChannels(userId),
-      write: ['public', 'mafia', 'dead'].filter((c) => this.canWrite(userId, c)),
+      write: ['public', 'mafia', 'dead', 'spectator'].filter((c) => this.canWrite(userId, c)),
     };
   }
 
@@ -760,6 +790,7 @@ class Game extends EventEmitter {
       hasPassword: this.hasPassword,
       hostNickname: this.players.get(this.hostId)?.nickname ?? '',
       mafiaCount: this.mafiaCount,
+      spectatorCount: this.spectators.size,
     };
   }
 
@@ -769,8 +800,11 @@ class Game extends EventEmitter {
    */
   stateFor(userId) {
     const me = this.players.get(userId);
+    const spec = this.spectators.get(userId);
     const playing = this.status === 'playing';
     const state = {
+      spectator: spec ? true : undefined,
+      spectatorCount: this.spectators.size,
       id: this.id,
       title: this.title,
       maxPlayers: this.maxPlayers,
@@ -795,6 +829,16 @@ class Game extends EventEmitter {
       })),
     };
     if (!playing) state.rematch = { count: this.rematch.size, need: Math.max(this.players.size, this.limits.minPlayers) };
+    if (playing && spec && !me) {
+      // 관전자: 유령과 같은 전지적 시점(모든 직업, 밤 행동). 개인 선택/조사 기록처럼 본인 몫 정보는 없다.
+      state.reveal = this._revealView();
+      state.pause = { left: 0, active: this._pauseView() };
+      state.phase = this.phase;
+      state.day = this.day;
+      state.endsAt = this.endsAt;
+      if (['defense', 'verdict', 'execution'].includes(this.phase)) state.defendantId = this.defendantId;
+      if (this.phase === 'vote') state.tally = this._tally();
+    }
     if (playing && me) {
       state.skip = {
         hurry: this._countAlive(this.hurryVotes), skip: this._countAlive(this.skipVotes), need: this._majority(),
@@ -803,10 +847,7 @@ class Game extends EventEmitter {
       };
       state.pause = {
         left: Math.max(0, this.limits.pausesPerPlayer - (this.pausesUsed.get(userId) ?? 0)),
-        active: this.paused ? {
-          by: this.paused.by, byNickname: this.players.get(this.paused.by)?.nickname ?? '',
-          remainMs: this.paused.remainMs, until: this.paused.until,
-        } : null,
+        active: this._pauseView(),
       };
       state.phase = this.phase;
       state.day = this.day;
@@ -826,8 +867,30 @@ class Game extends EventEmitter {
         hurry: this.hurryVotes.has(userId),
         skip: this.skipVotes.has(userId),
       };
+      // 유령 시점: 죽은 사람(과 관전자)에게만 모든 직업과 밤 행동 현황을 보여 준다. 살아 있는 사람에게는 절대 보내지 않는다.
+      if (!me.alive && !me.left) state.reveal = this._revealView();
     }
     return state;
+  }
+
+  /** 유령(사망자)용 전지적 시점: 전원의 직업, 그리고 밤 단계라면 마피아 지목/의사 보호/경찰 조사 대상 */
+  _revealView() {
+    const roles = {};
+    for (const p of this.players.values()) if (!p.left) roles[p.id] = p.role;
+    const night = this.phase === 'night' ? {
+      mafia: [...this.nightActs.mafia].map(([from, to]) => ({ from, to })),
+      doctor: this.nightActs.doctor,
+      police: this.nightActs.police,
+    } : null;
+    return { roles, night };
+  }
+
+  _pauseView() {
+    if (!this.paused) return null;
+    return {
+      by: this.paused.by, byNickname: this.players.get(this.paused.by)?.nickname ?? '',
+      remainMs: this.paused.remainMs, until: this.paused.until,
+    };
   }
 
   _myNightTarget(p) {

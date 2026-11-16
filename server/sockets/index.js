@@ -46,7 +46,7 @@ function registerSockets({ io, rooms }) {
   rooms.on('room', (roomId) => {
     const game = rooms.get(roomId);
     if (!game) return;
-    for (const userId of game.players.keys()) sendRoomState(game, userId);
+    for (const userId of [...game.players.keys(), ...game.spectators.keys()]) sendRoomState(game, userId);
   });
   rooms.on('toRoom', (roomId, event, payload) => io.to(roomChannel(roomId)).emit(event, payload));
   rooms.on('toUser', (userId, event, payload) => userSockets.get(userId)?.emit(event, payload));
@@ -99,6 +99,17 @@ function registerSockets({ io, rooms }) {
       enterRoom(r.room);
       reply(ack, { ok: true, roomId: r.room.id });
     });
+
+    // 진행 중인 방 관전 / 관전자가 참가자로 전환
+    socket.on('room:spectate', async (payload, ack) => {
+      const { roomId, password } = payload || {};
+      const r = await rooms.spectate(user, roomId, password);
+      if (r.error) return reply(ack, { error: r.error, roomId: r.roomId });
+      enterRoom(r.room);
+      reply(ack, { ok: true, roomId: r.room.id });
+      sendRoomState(r.room, user.id);
+    });
+    socket.on('room:play', (payload, ack) => reply(typeof payload === 'function' ? payload : ack, rooms.play(user.id)));
 
     socket.on('game:start', (ack) => {
       const g = rooms.getRoomOf(user.id);

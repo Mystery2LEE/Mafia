@@ -126,6 +126,41 @@ class RoomManager extends EventEmitter {
     return { room: r.game };
   }
 
+  /** 진행 중인 방을 관전자로 입장한다. 대기 중인 방은 일반 입장(join)을 쓴다. */
+  async spectate(user, roomId, password) {
+    const current = this.userRoom.get(user.id);
+    if (current) return { error: current === roomId ? 'already_joined' : 'already_in_room', roomId: current };
+    const check = () => {
+      const g = this.rooms.get(roomId);
+      if (!g) return { error: 'not_found' };
+      if (g.status !== 'playing') return { error: 'not_playing' };
+      if (g.spectators.size >= this.limits.maxSpectators) return { error: 'spectators_full' };
+      return { game: g };
+    };
+    let r = check();
+    if (r.error) return r;
+    if (r.game.hasPassword) {
+      const ok = typeof password === 'string' && (await bcrypt.compare(password, r.game.passwordHash));
+      if (!ok) return { error: 'bad_password' };
+      r = check();
+      if (r.error) return r;
+    }
+    if (this.userRoom.has(user.id)) return { error: 'already_in_room', roomId: this.userRoom.get(user.id) };
+
+    r.game.addSpectator(user);
+    this.userRoom.set(user.id, roomId);
+    this.emit('lobby');
+    this.emit('room', roomId);
+    return { room: r.game };
+  }
+
+  /** 관전자가 참가자로 바뀐다 (게임이 끝나 대기실로 돌아온 방에서) */
+  play(userId) {
+    const game = this.getRoomOf(userId);
+    if (!game) return { error: 'not_in_room' };
+    return game.promoteSpectator(userId);
+  }
+
   /** 방 나가기. 방장이면 다음 사람에게 이전, 빈 방이면 삭제 */
   leave(userId) {
     const game = this.getRoomOf(userId);
@@ -134,6 +169,12 @@ class RoomManager extends EventEmitter {
     this.userRoom.delete(userId);
     const { empty } = game.leave(userId);
     if (empty) {
+      // 참가자가 모두 나갔으면 방이 닫힌다: 남은 관전자도 내보낸다
+      for (const id of game.spectators.keys()) {
+        this._clearGrace(id);
+        this.userRoom.delete(id);
+        this.emit('toUser', id, 'room:closed', {});
+      }
       game.destroy();
       this.rooms.delete(game.id);
     } else {
