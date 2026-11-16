@@ -11,15 +11,11 @@ const Pause = (() => {
   let built = false;
   let saved = null;
 
-  const greeting = () => {
-    const h = new Date().getHours();
-    return h < 5 ? '늦은 시간이네요' : h < 12 ? '좋은 아침이에요' : h < 18 ? '좋은 오후예요' : '좋은 저녁이에요';
-  };
+  const GREETING = '반갑습니다, 또 오셨네요';
 
   function build() {
     if (built) return;
     built = true;
-    const nick = (typeof state !== 'undefined' && state?.players?.find((p) => p.id === state.youId)?.nickname) || '';
     const root = document.createElement('div');
     root.id = 'fake-claude';
     root.className = 'fake-claude';
@@ -47,9 +43,9 @@ const Pause = (() => {
       </main>`;
     const rec = root.querySelector('.fk-recents');
     for (const t of RECENTS) { const d = document.createElement('div'); d.textContent = t; rec.append(d); }
-    root.querySelector('.fk-name').textContent = nick || '사용자';
-    root.querySelector('.fk-me b').textContent = (nick || 'U').slice(0, 1).toUpperCase();
-    root.querySelector('h1').textContent = nick ? `${greeting()}, ${nick}님` : greeting();
+    root.querySelector('.fk-name').textContent = '사용자';
+    root.querySelector('.fk-me b').textContent = 'U';
+    root.querySelector('h1').textContent = GREETING;
     // 입력해도 아무 일도 일어나지 않는다 (전송 없음)
     root.querySelector('textarea').addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) e.preventDefault();
