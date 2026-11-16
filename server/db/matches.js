@@ -46,12 +46,51 @@ function createMatchRepo(raw, { floor }) {
     FROM match_players WHERE user_id = ? AND rating_counted = 1 GROUP BY role`);
   const recentStmt = raw.prepare(`
     SELECT m.id AS matchId, m.room_title AS roomTitle, m.played_at AS playedAt, m.winner_team AS winnerTeam,
-           mp.role, mp.result, mp.rating_delta AS ratingDelta, mp.survived, mp.rating_counted AS counted
+           mp.role, mp.team, mp.result, mp.rating_delta AS ratingDelta, mp.survived, mp.rating_counted AS counted
     FROM match_players mp JOIN matches m ON m.id = mp.match_id
     WHERE mp.user_id = ? ORDER BY m.id DESC LIMIT ?`);
 
+  // 더 보기용: beforeId 보다 오래된 경기부터 limit 건
+  const pageStmt = raw.prepare(`
+    SELECT m.id AS matchId, m.room_title AS roomTitle, m.played_at AS playedAt, m.winner_team AS winnerTeam,
+           mp.role, mp.team, mp.result, mp.rating_delta AS ratingDelta, mp.survived, mp.rating_counted AS counted
+    FROM match_players mp JOIN matches m ON m.id = mp.match_id
+    WHERE mp.user_id = ? AND m.id < ? ORDER BY m.id DESC LIMIT ?`);
+  const byTeamStmt = raw.prepare(`
+    SELECT team, COUNT(*) AS games, COALESCE(SUM(result = 'win'), 0) AS wins
+    FROM match_players WHERE user_id = ? AND rating_counted = 1 GROUP BY team`);
+  const survivalStmt = raw.prepare(`
+    SELECT COUNT(*) AS games, COALESCE(SUM(survived), 0) AS survived, COALESCE(SUM(left_early), 0) AS leftEarly
+    FROM match_players WHERE user_id = ? AND rating_counted = 1`);
+  // 승/패 흐름(최신순) — 연승/연패 계산용. 이탈은 패배로 본다.
+  const resultsStmt = raw.prepare(`
+    SELECT result FROM match_players WHERE user_id = ? AND rating_counted = 1 ORDER BY match_id DESC LIMIT 200`);
+  const deltasStmt = raw.prepare(
+    'SELECT match_id AS matchId, rating_delta AS delta FROM match_players WHERE user_id = ? ORDER BY match_id DESC LIMIT ?');
+  const matchStmt = raw.prepare('SELECT id, room_title AS roomTitle, played_at AS playedAt, winner_team AS winnerTeam FROM matches WHERE id = ?');
+  const matchPlayersStmt = raw.prepare(`
+    SELECT mp.user_id AS userId, u.nickname, mp.role, mp.team, mp.survived, mp.result,
+           mp.rating_delta AS ratingDelta, mp.left_early AS leftEarly, mp.rating_counted AS counted
+    FROM match_players mp JOIN users u ON u.id = mp.user_id
+    WHERE mp.match_id = ? ORDER BY mp.team DESC, u.nickname`);
+
   return {
     recordMatch,
+    page: (userId, beforeId, limit) => pageStmt.all(userId, beforeId, limit),
+    byTeam: (userId) => byTeamStmt.all(userId),
+    survival: (userId) => survivalStmt.get(userId),
+    results: (userId) => resultsStmt.all(userId).map((r) => r.result),
+    /** 최근 경기들의 경기 후 레이팅(오래된 순). 현재 레이팅에서 거꾸로 되짚어 계산한다. */
+    ratingHistory: (userId, currentRating, limit = 30) => {
+      let r = currentRating;
+      const out = [];
+      for (const d of deltasStmt.all(userId, limit)) { out.push({ matchId: d.matchId, rating: r, delta: d.delta }); r -= d.delta; }
+      return out.reverse();
+    },
+    match: (id) => {
+      const m = matchStmt.get(id);
+      return m ? { ...m, players: matchPlayersStmt.all(id) } : null;
+    },
     ranking: (limit = 50) => rankingStmt.all(limit),
     rankOf: (rating) => rankOfStmt.get(rating).rank,
     totals: (userId) => totalsStmt.get(userId),

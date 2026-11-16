@@ -1,0 +1,68 @@
+/* ----- 일시정지 오버레이 ----- */
+.pause-ov { z-index: 70; }
+.pause-card { padding: 26px 24px 20px; width: min(420px, 100%); text-align: center; }
+.pause-card .over-kicker { margin-bottom: 4px; }
+.pause-card h2 { font-size: 26px; color: var(--gold-hi); }
+.pause-card p { color: var(--muted); font-size: 14px; margin: 10px 0 0; }
+.pause-card .pause-auto { font-variant-numeric: tabular-nums; color: var(--ivory); }
+.pause-actions { display: grid; gap: 8px; margin-top: 18px; }
+.pause-actions .btn { margin-top: 0; }
+.pause-hint { font-size: 12px; color: var(--muted); margin-top: 12px; }
+html[data-skin] .pause-card h2 { color: var(--sk-heading); }
+html[data-skin] .pause-card .pause-auto { color: var(--sk-text); }
+
+/* 종료 화면의 두 번째 버튼 */
+.over-card .over-close { width: 100%; margin-top: 8px; padding: 10px; justify-content: center; }
+
+/* ----- 위장 화면 (가짜 새 채팅 화면. 서버/Claude 와 아무 연결이 없는 정적 화면) ----- */
+.fake-claude {
+  position: fixed; inset: 0; z-index: 9999; display: none; background: #faf9f5; color: #3d3929;
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', 'Pretendard Variable', Pretendard, 'Malgun Gothic', sans-serif;
+}
+.fake-claude.on { display: flex; }
+.fake-claude * { box-sizing: border-box; }
+.fk-side {
+  width: 272px; flex: none; background: #f5f4ed; border-right: 1px solid #e8e6dc; display: flex; flex-direction: column; padding: 12px 10px;
+}
+.fk-brand { display: flex; align-items: center; gap: 8px; padding: 6px 10px 14px; font: 600 22px/1 Georgia, 'Times New Roman', serif; color: #3d3929; }
+.fk-brand svg { width: 22px; height: 22px; }
+.fk-nav { display: grid; gap: 2px; }
+.fk-nav div { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; font-size: 14px; color: #3d3929; }
+.fk-nav div:hover { background: #ece9dd; }
+.fk-nav .new { color: #c96442; font-weight: 600; }
+.fk-nav .new i { width: 22px; height: 22px; border-radius: 50%; background: #c96442; color: #fff; display: grid; place-items: center; font-style: normal; font-size: 16px; line-height: 1; }
+.fk-nav .ic { width: 22px; text-align: center; color: #73726c; }
+.fk-side h6 { margin: 18px 10px 6px; font-size: 12px; font-weight: 500; color: #73726c; }
+.fk-recents { display: grid; gap: 1px; overflow: hidden; }
+.fk-recents div { padding: 7px 10px; border-radius: 8px; font-size: 13.5px; color: #3d3929; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fk-recents div:hover { background: #ece9dd; }
+.fk-me { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 10px; border-top: 1px solid #e8e6dc; }
+.fk-me b { width: 32px; height: 32px; border-radius: 50%; background: #3d3929; color: #faf9f5; display: grid; place-items: center; font-size: 14px; }
+.fk-me span { font-size: 13.5px; line-height: 1.25; }
+.fk-me small { display: block; color: #73726c; font-size: 12px; }
+.fk-main { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 20px 90px; position: relative; }
+.fk-plan { position: absolute; top: 14px; right: 18px; font-size: 12.5px; color: #73726c; border: 1px solid #e0ded2; border-radius: 99px; padding: 4px 12px; background: #fff; }
+.fk-hello { display: flex; align-items: center; gap: 14px; margin-bottom: 26px; text-align: center; }
+.fk-hello svg { width: 38px; height: 38px; flex: none; }
+.fk-hello h1 { margin: 0; font: 400 clamp(26px, 4vw, 38px)/1.2 Georgia, 'Times New Roman', 'Noto Serif KR', serif; color: #3d3929; cursor: default; }
+.fk-box {
+  width: min(680px, 100%); background: #fff; border: 1px solid #e5e2d6; border-radius: 20px; padding: 14px 14px 10px;
+  box-shadow: 0 2px 12px rgba(61, 57, 41, 0.07);
+}
+.fk-box textarea {
+  width: 100%; min-height: 56px; max-height: 200px; resize: none; border: 0; outline: 0; background: transparent;
+  font: inherit; font-size: 16px; color: #3d3929; padding: 4px 6px;
+}
+.fk-box textarea::placeholder { color: #8a887f; }
+.fk-tools { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.fk-tools .plus { width: 32px; height: 32px; border: 1px solid #e0ded2; border-radius: 8px; display: grid; place-items: center; color: #5d5b52; font-size: 18px; }
+.fk-tools .model { margin-left: auto; font-size: 13px; color: #5d5b52; padding: 6px 10px; border-radius: 8px; }
+.fk-tools .send { width: 32px; height: 32px; border-radius: 8px; background: #e8a58f; color: #fff; display: grid; place-items: center; font-size: 16px; }
+.fk-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 18px; }
+.fk-chips span { border: 1px solid #e0ded2; border-radius: 99px; padding: 7px 14px; font-size: 13.5px; color: #5d5b52; background: #faf9f5; }
+@media (max-width: 760px) {
+  .fk-side { display: none; }
+  .fk-hello { flex-direction: column; gap: 8px; }
+}
+
+#pause-btn[hidden], .more-btn[hidden] { display: none !important; }

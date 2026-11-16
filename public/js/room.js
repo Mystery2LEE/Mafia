@@ -20,6 +20,8 @@ const ERRORS = {
   wrong_phase: '지금은 할 수 없는 단계입니다.', invalid_target: '선택할 수 없는 대상입니다.',
   no_ability: '능력이 없는 직업입니다.', rate_limited: '너무 빠르게 보내고 있습니다.',
   invalid_text: '1~200자로 입력하세요.', invalid_vote: '잘못된 요청입니다.',
+  paused: '일시정지 중입니다.', already_paused: '이미 일시정지 중입니다.', pause_limit: '일시정지 횟수를 모두 썼습니다.',
+  not_paused: '일시정지 상태가 아닙니다.',
   already_hurried: '이미 시간이 줄어들었습니다.', no_vote_today: '첫날은 투표가 없어 건너뛸 것이 없습니다.',
 };
 const RING = 113.1; // 타이머 원의 둘레(2πr, r=18)
@@ -66,6 +68,7 @@ function render() {
   renderTabs();
   renderLog();
   renderChatInput();
+  Pause.sync(state);
 }
 
 function renderRole() {
@@ -170,6 +173,7 @@ function renderRing() {
     else if (mates.some((m) => m.id === p.id) && p.id !== state.youId) { tag = '마피아 동료'; tagCls += ' mafia'; }
     else if (Object.values(picks).includes(p.id) && state.phase === 'night') { tag = '지목됨'; tagCls += ' mafia'; }
     else if (!p.connected) tag = '연결 끊김';
+    else if (!playing && p.ready) { tag = '준비 완료'; tagCls += ' role'; }
     card.append(el('div', tagCls, tag));
 
     if (state.phase === 'vote' && playing) {
@@ -199,15 +203,21 @@ function renderActions() {
 
   if (state.status === 'waiting') {
     const n = state.players.length;
+    const me = state.players.find((p) => p.id === state.youId);
+    const ready = state.rematch?.count ?? 0;
+    const rb = el('button', me?.ready ? 'btn-sm ghost' : 'btn-sm');
+    rb.innerHTML = `${Icons.svg('check', 16)}${me?.ready ? '준비 취소' : '준비 완료'}`;
+    rb.onclick = () => toggleReady(!me?.ready);
+    box.append(rb);
     if (state.hostId === state.youId) {
       const b = el('button', 'btn-sm');
       b.innerHTML = `${Icons.svg('gavel', 16)}게임 시작`;
       b.disabled = n < 4;
       b.onclick = startGame;
       box.append(b);
-      msg.textContent = n < 4 ? `최소 4명이 필요합니다 (${n}/${state.maxPlayers})` : `${n}/${state.maxPlayers}명 · 시작할 수 있습니다`;
+      msg.textContent = n < 4 ? `최소 4명이 필요합니다 (${n}/${state.maxPlayers})` : `${n}/${state.maxPlayers}명 · 준비 ${ready}/${n} · 전원이 준비하면 바로 시작됩니다`;
     } else {
-      msg.textContent = `방장이 시작하기를 기다리는 중 (${n}/${state.maxPlayers})`;
+      msg.textContent = `준비 ${ready}/${n} · 전원이 준비하거나 방장이 시작하면 게임이 시작됩니다`;
     }
     return;
   }
@@ -338,6 +348,10 @@ function renderChatInput() {
 // ---------- 행동 ----------
 function startGame() {
   socket.emit('game:start', (res) => { if (res.error) flash(ERRORS[res.error] || '시작할 수 없습니다.'); });
+}
+
+function toggleReady(on) {
+  socket.emit('game:rematch', { on }, (res) => { if (res?.error) flash(ERRORS[res.error] || '지금은 할 수 없습니다.'); });
 }
 
 function onPlayerClick(p) {
@@ -476,6 +490,10 @@ function showOver(r) {
 setInterval(() => {
   const ring = $('timerring');
   const box = $('timer-box');
+  if (state?.status === 'playing' && state.pause?.active) { // 멈춘 동안은 남은 시간을 그대로 보여 준다
+    $('timer').textContent = Math.ceil(state.pause.active.remainMs / 1000);
+    return;
+  }
   if (!state?.endsAt || state.status !== 'playing') {
     $('timer').textContent = '';
     ring.style.strokeDashoffset = '0';
@@ -504,6 +522,8 @@ async function init() {
     $('chat-input').value = '';
   });
   $('over-close').onclick = () => $('over').classList.add('hidden');
+  $('over-again').onclick = () => { $('over').classList.add('hidden'); toggleReady(true); };
+  Pause.init();
   $('leave').onclick = () => socket.emit('room:leave', () => { location.href = '/lobby.html'; });
 }
 

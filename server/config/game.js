@@ -13,6 +13,9 @@ module.exports = {
     fixedSec: { roleReveal: 5, morning: 5, execution: 5 },
     // 시간 단축 투표가 과반이면 남은 시간을 이 값(초)으로 줄인다
     hurrySec: 5,
+    // 일시정지: 1인당 한 판에 쓸 수 있는 횟수, 한 번에 멈출 수 있는 최대 시간(초)
+    pausesPerPlayer: 2,
+    pauseMaxSec: 300,
     // 1초가 몇 ms인가. 테스트에서 줄여서 타이머를 빠르게 돌린다.
     secondMs: 1000,
     // 채팅 도배 방지: perMs 동안 count개까지

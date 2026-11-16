@@ -66,6 +66,13 @@ class Game extends EventEmitter {
     this.skipVotes = new Set(); // 이번 단계 '오늘 건너뛰기(처형 투표 없이 밤으로)' 동의자
     this.hurried = false; // 이번 단계에서 이미 시간을 줄였는가
     this.policeLog = []; // 경찰에게만 보이는 누적 조사 결과
+
+    // 일시정지: 진행 중 판을 멈춘다. paused = { by, remainMs, until } (아니면 null)
+    this.paused = null;
+    this.pauseTimer = null;
+    this.pausesUsed = new Map(); // userId -> 이번 판에 쓴 횟수 (남용 방지)
+    // 다시 하기: 대기실에서 '한 판 더'에 동의한 사람들. 전원이 동의하면 자동 시작
+    this.rematch = new Set();
   }
 
   _emptyNight() { return { mafia: new Map(), doctor: null, police: null }; }
@@ -105,6 +112,7 @@ class Game extends EventEmitter {
   leave(userId) {
     const p = this.players.get(userId);
     if (!p) return { empty: this._remaining() === 0 };
+    this.rematch.delete(userId);
     if (this.status === 'waiting') {
       this.players.delete(userId);
     } else {
@@ -150,6 +158,9 @@ class Game extends EventEmitter {
       adjusted = mafia !== this.mafiaCount;
     }
     this.customRules = mafia !== def;
+    this.rematch.clear();
+    this._clearPause();
+    this.pausesUsed.clear();
     this._assignRoles(mafia);
     this.status = 'playing';
     this.day = 0;
@@ -226,7 +237,7 @@ class Game extends EventEmitter {
   }
 
   _advance() {
-    if (this.destroyed || this.status !== 'playing') return;
+    if (this.destroyed || this.status !== 'playing' || this.paused) return;
     const fixed = this.limits.fixedSec;
     switch (this.phase) {
       case 'role_reveal':
@@ -284,6 +295,7 @@ class Game extends EventEmitter {
 
   /** 시간 단축 동의/철회. 생존자 과반이 동의하면 남은 시간이 hurrySec 로 줄어든다. */
   voteHurry(userId, on) {
+    if (this.paused) return { error: 'paused' };
     const me = this.players.get(userId);
     if (!me || me.left || !me.alive || this.status !== 'playing') return { error: 'forbidden' };
     if (!['discussion', 'vote', 'night', 'defense'].includes(this.phase)) return { error: 'wrong_phase' };
@@ -306,6 +318,7 @@ class Game extends EventEmitter {
 
   /** 오늘 건너뛰기 동의/철회. 과반이면 처형 투표 없이 곧바로 밤이 된다. */
   voteSkip(userId, on) {
+    if (this.paused) return { error: 'paused' };
     const me = this.players.get(userId);
     if (!me || me.left || !me.alive || this.status !== 'playing') return { error: 'forbidden' };
     if (!['discussion', 'vote'].includes(this.phase)) return { error: 'wrong_phase' };
@@ -321,12 +334,78 @@ class Game extends EventEmitter {
     return { ok: true };
   }
 
+  // ---------- 일시정지 ----------
+
+  _clearPause() {
+    clearTimeout(this.pauseTimer);
+    this.pauseTimer = null;
+    this.paused = null;
+  }
+
+  /** 참가자 누구나 판을 멈출 수 있다(1인당 pausesPerPlayer 회). 최대 pauseMaxSec 뒤에는 자동으로 이어진다. */
+  pause(userId) {
+    const me = this.players.get(userId);
+    if (!me || me.left || this.status !== 'playing' || !this.phase) return { error: 'forbidden' };
+    if (this.paused) return { error: 'already_paused' };
+    const used = this.pausesUsed.get(userId) ?? 0;
+    if (used >= this.limits.pausesPerPlayer) return { error: 'pause_limit' };
+    this.pausesUsed.set(userId, used + 1);
+
+    clearTimeout(this.timer);
+    const remainMs = Math.max(0, this.endsAt - Date.now());
+    const maxMs = this._ms(this.limits.pauseMaxSec);
+    this.paused = { by: userId, remainMs, until: Date.now() + maxMs };
+    this.endsAt = null;
+    this.pauseTimer = setTimeout(() => this._resume(null), maxMs);
+    this.pauseTimer.unref?.();
+    this._system(`${me.nickname}님이 게임을 일시정지했습니다.`);
+    this.emit('toRoom', 'game:paused', { by: userId });
+    this.emit('room');
+    return { ok: true };
+  }
+
+  /** 참가자 누구나 이어서 진행할 수 있다. */
+  resume(userId) {
+    const me = this.players.get(userId);
+    if (!me || me.left) return { error: 'forbidden' };
+    if (!this.paused) return { error: 'not_paused' };
+    this._resume(me.nickname);
+    return { ok: true };
+  }
+
+  _resume(nickname) {
+    if (!this.paused || this.destroyed) return;
+    const { remainMs } = this.paused;
+    this._clearPause();
+    this.endsAt = Date.now() + remainMs;
+    this.timer = setTimeout(() => this._advance(), remainMs);
+    this.timer.unref?.();
+    this._system(nickname ? `${nickname}님이 게임을 이어갑니다.` : '일시정지 시간이 끝나 게임을 이어갑니다.');
+    this.emit('toRoom', 'game:resumed', { endsAt: this.endsAt });
+    this.emit('room');
+  }
+
+  // ---------- 다시 하기 (대기실에서 한 판 더) ----------
+
+  /** 다시 하기 동의/철회. 방 인원이 최소 인원 이상이고 전원이 동의하면 자동으로 시작한다. */
+  voteRematch(userId, on) {
+    const me = this.players.get(userId);
+    if (!me || me.left || this.status !== 'waiting') return { error: 'forbidden' };
+    this._toggle(this.rematch, userId, on !== false);
+    const everyone = this.players.size >= this.limits.minPlayers
+      && [...this.players.keys()].every((id) => this.rematch.has(id));
+    if (everyone) return this.start(this.hostId);
+    this.emit('room');
+    return { ok: true };
+  }
+
   // ---------- 밤 능력 ----------
 
   _isAlive(id) { const p = this.players.get(id); return !!p && p.alive && !p.left; }
 
   /** 밤 능력 사용: 마피아=지목 살해 / 의사=보호 / 경찰=조사. 밤이 끝나기 전까지는 마지막 선택이 유효하다. */
   nightAction(userId, targetId) {
+    if (this.paused) return { error: 'paused' };
     const me = this.players.get(userId);
     if (!me || me.left || !me.alive || this.status !== 'playing') return { error: 'forbidden' };
     if (this.phase !== 'night') return { error: 'wrong_phase' };
@@ -425,6 +504,7 @@ class Game extends EventEmitter {
 
   /** targetId === null 이면 투표 취소. 모든 생존자가 투표하면 투표 단계를 일찍 끝낸다. */
   castVote(userId, targetId) {
+    if (this.paused) return { error: 'paused' };
     const me = this.players.get(userId);
     if (!me || me.left || !me.alive || this.status !== 'playing') return { error: 'forbidden' };
     if (this.phase !== 'vote') return { error: 'wrong_phase' };
@@ -473,6 +553,7 @@ class Game extends EventEmitter {
   }
 
   castVerdict(userId, agree) {
+    if (this.paused) return { error: 'paused' };
     const me = this.players.get(userId);
     if (!me || me.left || !me.alive || this.status !== 'playing') return { error: 'forbidden' };
     if (this.phase !== 'verdict') return { error: 'wrong_phase' };
@@ -566,6 +647,7 @@ class Game extends EventEmitter {
   chat(userId, channel, text) {
     const p = this.players.get(userId);
     if (!p || p.left) return { error: 'not_in_room' };
+    if (this.paused) return { error: 'paused' };
     if (!CHANNELS.includes(channel)) return { error: 'invalid_channel' };
     if (typeof text !== 'string') return { error: 'invalid_text' };
     const clean = text.replace(/[\u0000-\u001f\u007f]/g, '').trim();
@@ -621,6 +703,8 @@ class Game extends EventEmitter {
 
   _endGame(winner) {
     clearTimeout(this.timer);
+    this._clearPause();
+    this.rematch.clear();
     const roles = [...this.players.values()].map((p) => ({
       id: p.id, nickname: p.nickname, role: p.role, team: p.team, alive: p.alive, left: p.left,
     }));
@@ -707,13 +791,22 @@ class Game extends EventEmitter {
         isHost: p.id === this.hostId,
         alive: playing ? p.alive : undefined,
         left: playing ? p.left : undefined,
+        ready: playing ? undefined : this.rematch.has(p.id),
       })),
     };
+    if (!playing) state.rematch = { count: this.rematch.size, need: Math.max(this.players.size, this.limits.minPlayers) };
     if (playing && me) {
       state.skip = {
         hurry: this._countAlive(this.hurryVotes), skip: this._countAlive(this.skipVotes), need: this._majority(),
         canHurry: ['discussion', 'vote', 'night', 'defense'].includes(this.phase) && !this.hurried,
         canSkip: ['discussion', 'vote'].includes(this.phase) && this._canVoteSkip(),
+      };
+      state.pause = {
+        left: Math.max(0, this.limits.pausesPerPlayer - (this.pausesUsed.get(userId) ?? 0)),
+        active: this.paused ? {
+          by: this.paused.by, byNickname: this.players.get(this.paused.by)?.nickname ?? '',
+          remainMs: this.paused.remainMs, until: this.paused.until,
+        } : null,
       };
       state.phase = this.phase;
       state.day = this.day;
@@ -747,6 +840,7 @@ class Game extends EventEmitter {
   destroy() {
     this.destroyed = true;
     clearTimeout(this.timer);
+    clearTimeout(this.pauseTimer);
     this.removeAllListeners();
   }
 }

@@ -107,3 +107,47 @@ table td:nth-child(2) { max-width: 9em; overflow: hidden; text-overflow: ellipsi
   .table td:nth-child(2) { max-width: 6.5em; }
   .table { width: 100%; table-layout: auto; }
 }
+
+/* ----- 전적 상세 ----- */
+.stat-grid.sm .stat b { font-size: 21px; }
+.sec-note { font-family: var(--font-body); font-size: 12px; font-weight: 400; color: var(--muted); margin-left: 6px; }
+.chart-box { padding: 14px 14px 8px; border-radius: var(--radius); background: rgba(28, 23, 37, 0.9); border: 1px solid var(--line); }
+.chart-box svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart-box .grid { stroke: rgba(255, 255, 255, 0.08); stroke-width: 1; }
+.chart-box .line { fill: none; stroke: var(--gold); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+.chart-box .area { fill: rgba(212, 168, 67, 0.12); stroke: none; }
+.chart-box .dot { fill: var(--gold-hi); }
+.chart-box .dot.win { fill: #6fd29b; }
+.chart-box .dot.lose { fill: #ff7d75; }
+.chart-box text { fill: var(--muted); font-size: 11px; font-family: var(--font-body); }
+.role-rows + .role-rows { margin-top: 8px; }
+.role-row.team .rn { font-weight: 700; }
+.role-row .rn .tdot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.role-row .rn .tdot.mafia { background: #d8524b; }
+.role-row .rn .tdot.citizen { background: #6aa0ff; }
+.table tbody tr.clickable { cursor: pointer; }
+.table tbody tr.clickable:hover td { background: rgba(212, 168, 67, 0.12); }
+.table td.date { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.more-btn { display: block; margin: 10px auto 0; }
+.table tr.row-link { cursor: pointer; }
+.table tr.row-link:hover td { background: rgba(212, 168, 67, 0.12); }
+
+.modal { position: fixed; inset: 0; z-index: 80; display: grid; place-items: center; padding: 16px; background: rgba(4, 3, 8, 0.78); backdrop-filter: blur(4px); overflow-y: auto; }
+.modal.hidden { display: none; }
+.modal-card { position: relative; width: min(560px, 100%); padding: 22px 20px 16px; }
+.modal-card h3 { font-size: 20px; color: var(--gold-hi); padding-right: 30px; }
+.modal-x { position: absolute; top: 10px; right: 12px; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-size: 24px; cursor: pointer; }
+.modal-x:hover { color: var(--ivory); }
+.md-sub { color: var(--muted); font-size: 13px; margin: 4px 0 8px; }
+.md-table td { padding: 9px 10px; font-size: 13.5px; }
+.md-table a { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--muted); }
+.md-table tr.me td { background: rgba(212, 168, 67, 0.16); }
+.md-table .rolecell { display: flex; align-items: center; gap: 6px; }
+.md-table .rolecell img { width: 16px; height: 20px; border-radius: 2px; }
+html[data-skin] .modal { background: rgba(20, 20, 19, 0.55); }
+html[data-skin] .modal-card h3 { color: var(--sk-heading); }
+html[data-skin] .chart-box { background: var(--sk-surface); border-color: var(--sk-border); }
+html[data-skin] .chart-box .line { stroke: var(--sk-accent); }
+html[data-skin] .chart-box .area { fill: color-mix(in srgb, var(--sk-accent) 14%, transparent); }
+
+#pause-btn[hidden], .more-btn[hidden] { display: none !important; }

@@ -262,7 +262,7 @@ test('랭킹/프로필 API: 로그인 필요, 상위 50, 승률/직업별/최근
   assert.equal(pf.user.rating, 1000 + 8 * 30 - 4 * 10);
   assert.equal(pf.user.tier.name, '건달'); // 1200점 (건달 시작선)
   assert.equal(pf.totals.games, 12);
-  assert.equal(pf.recent.length, 10);
+  assert.equal(pf.recent.length, 12); // 최근 20경기까지
   assert.equal(pf.recent[0].roomTitle, 'r11'); // 최신 경기 순
   const police = pf.byRole.find((r) => r.role === 'police');
   const citizen = pf.byRole.find((r) => r.role === 'citizen');

@@ -31,12 +31,15 @@ const tierBadge = (t) => {
       pav.innerHTML = Icons.avatar(p.id, 78, p.av);
       pod.append(pav, el('div', 'nm', p.nickname), el('div', 'rt', String(p.rating)),
         el('div', 'wr', `${p.wins}승 ${p.games - p.wins}패 · ${p.winRate}%`), tierBadge(p.tier));
+      pod.style.cursor = 'pointer';
+      pod.onclick = () => { location.href = `/profile.html?id=${p.id}`; };
       podium.append(pod);
     }
 
     const body = document.getElementById('rows');
     for (const p of players) {
-      const tr = el('tr', p.isMe ? 'me' : '');
+      const tr = el('tr', `row-link${p.isMe ? ' me' : ''}`);
+      tr.onclick = () => { location.href = `/profile.html?id=${p.id}`; };
       const tierTd = el('td');
       tierTd.append(tierBadge(p.tier));
       tr.append(cell(String(p.rank), 'rk'), cell(p.nickname), tierTd, cell(String(p.rating), 'num'),
