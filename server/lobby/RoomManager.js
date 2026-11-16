@@ -71,13 +71,18 @@ class RoomManager extends EventEmitter {
     if (doctorSelfProtect !== undefined && typeof doctorSelfProtect !== 'boolean')
       return { error: 'invalid_options' };
 
+    if (opts.jester !== undefined && typeof opts.jester !== 'boolean') return { error: 'invalid_options' };
+    const options = {};
+    if (doctorSelfProtect !== undefined) options.doctorSelfProtect = doctorSelfProtect;
+    if (opts.jester !== undefined) options.jester = opts.jester;
+
     const passwordHash = password ? await bcrypt.hash(password, 8) : null;
     // await 도중에 다른 방에 들어갔을 수 있으므로 다시 확인
     if (this.userRoom.has(user.id)) return { error: 'already_in_room', roomId: this.userRoom.get(user.id) };
 
     const game = new Game({
       id: this._newId(), title: t, maxPlayers, passwordHash, times: normTimes, limits: this.limits,
-      options: doctorSelfProtect === undefined ? {} : { doctorSelfProtect },
+      options,
       mafiaCount, playerInfo: this.playerInfo,
     });
     this._wire(game);

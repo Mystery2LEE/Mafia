@@ -86,7 +86,7 @@ function harness(srv, sockets, defaultTimes) {
     const ps = [];
     for (let i = 0; i < n; i++) ps.push(await player(`g${i}`));
     const r = await emitAck(ps[0].socket, 'room:create', {
-      title: '게임방', maxPlayers: Math.max(n, 4), times: defaultTimes, ...opts,
+      title: '게임방', maxPlayers: Math.max(n, 4), times: defaultTimes, jester: false, ...opts, // 기존 테스트는 광대 없는 기본 직업 구성을 전제로 한다
     });
     if (!r.ok) throw new Error(`room:create failed: ${r.error}`);
     for (const p of ps.slice(1)) {

@@ -1,4 +1,7 @@
 // 게임/방 설정값. 숫자 조정은 이 파일에서만 한다.
+// 중립 직업 '광대'가 들어가는 최소 인원
+const JESTER_MIN_PLAYERS = 5;
+
 module.exports = {
   limits: {
     minPlayers: 4,
@@ -25,7 +28,9 @@ module.exports = {
     // 첫날 낮에 처형 투표를 할지. false 면 첫날은 토론만 하고 바로 밤으로 넘어간다 (정보가 없을 때의 무작위 처형 방지)
     firstDayVote: false,
     // 방 생성 시 바꿀 수 있는 게임 옵션의 기본값
-    options: { doctorSelfProtect: true },
+    options: { doctorSelfProtect: true, jester: true },
+    // 광대 옵션이 켜진 5명 이상 판에서 실제로 광대가 나올 확률 (0~1)
+    jesterChance: 0.7,
   },
   // 페이즈 기본 시간(초)
   defaultTimes: { night: 30, discussion: 90, vote: 30, defense: 20, verdict: 15 },
@@ -33,6 +38,7 @@ module.exports = {
   defaultMafia,
   maxMafia,
   roleCounts,
+  JESTER_MIN_PLAYERS,
 };
 
 // 인원별 기본 마피아 수: 4–5명 1 / 6–8명 2 / 9–12명 3
@@ -46,7 +52,11 @@ function maxMafia(n) {
 }
 
 // 직업 배분: 경찰·의사 각 1, 나머지 시민. mafia 를 주면 기본값 대신 그 수를 쓴다.
-function roleCounts(n, mafia) {
+// jester(중립) 를 켜면 5명 이상일 때 시민 한 명이 광대로 바뀐다. (시민이 최소 1명은 남아야 한다)
+function roleCounts(n, mafia, jester = false) {
   const m = mafia ?? defaultMafia(n);
-  return { mafia: m, police: 1, doctor: 1, citizen: n - m - 2 };
+  const j = jester && n >= JESTER_MIN_PLAYERS && n - m - 3 >= 1 ? 1 : 0;
+  const counts = { mafia: m, police: 1, doctor: 1, citizen: n - m - 2 - j };
+  if (j) counts.jester = j;
+  return counts;
 }

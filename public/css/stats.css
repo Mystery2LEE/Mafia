@@ -125,6 +125,7 @@ table td:nth-child(2) { max-width: 9em; overflow: hidden; text-overflow: ellipsi
 .role-row .rn .tdot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
 .role-row .rn .tdot.mafia { background: #d8524b; }
 .role-row .rn .tdot.citizen { background: #6aa0ff; }
+.role-row .rn .tdot.jester { background: #b377f0; }
 .table tbody tr.clickable { cursor: pointer; }
 .table tbody tr.clickable:hover td { background: rgba(212, 168, 67, 0.12); }
 .table td.date { color: var(--muted); font-size: 12px; white-space: nowrap; }

@@ -1,7 +1,7 @@
 const $ = (id) => document.getElementById(id);
-const ROLE = { mafia: '마피아', police: '경찰', doctor: '의사', citizen: '시민' };
+const ROLE = { mafia: '마피아', police: '경찰', doctor: '의사', citizen: '시민', jester: '광대' };
 const RESULT = { win: '승리', lose: '패배', left: '이탈' };
-const TEAM = { mafia: '마피아 팀', citizen: '시민 팀' };
+const TEAM = { mafia: '마피아 팀', citizen: '시민 팀', jester: '광대' };
 const SVGNS = 'http://www.w3.org/2000/svg';
 const viewId = new URLSearchParams(location.search).get('id'); // 다른 사람 프로필 (없으면 내 프로필)
 
@@ -144,7 +144,7 @@ async function showMatch(id) {
   try {
     const m = await api(`/api/match/${id}`);
     $('md-title').textContent = m.roomTitle;
-    $('md-sub').textContent = `${fmtDate(m.playedAt)} · ${m.winnerTeam === 'mafia' ? '마피아 팀' : '시민 팀'} 승리`;
+    $('md-sub').textContent = `${fmtDate(m.playedAt)} · ${TEAM[m.winnerTeam] || '시민 팀'} 승리`;
     const rows = $('md-rows');
     rows.replaceChildren();
     for (const p of m.players) {

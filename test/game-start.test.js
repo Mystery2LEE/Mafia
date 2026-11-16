@@ -26,7 +26,7 @@ async function makeRoom(n, opts = {}) {
   const ps = [];
   for (let i = 0; i < n; i++) ps.push(await player(`g${i}`));
   const r = await emitAck(ps[0].socket, 'room:create', {
-    title: '게임방', maxPlayers: Math.max(n, 4), times: FAST_TIMES, ...opts,
+    title: '게임방', maxPlayers: Math.max(n, 4), times: FAST_TIMES, jester: false, ...opts,
   });
   assert.equal(r.ok, true);
   for (const p of ps.slice(1)) assert.equal((await emitAck(p.socket, 'room:join', { roomId: r.roomId })).ok, true);

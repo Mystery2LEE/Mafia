@@ -152,6 +152,7 @@ async function init() {
       maxPlayers: Number($('c-max').value),
       password: $('c-pw').value || undefined,
       doctorSelfProtect: $('c-doctor').checked,
+      jester: $('c-jester').checked,
       mafiaCount: $('c-mafia').value ? Number($('c-mafia').value) : undefined,
       times: Object.keys(times).length ? times : undefined,
     }, (res) => {

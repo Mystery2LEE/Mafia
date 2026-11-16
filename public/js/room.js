@@ -3,7 +3,7 @@
 const $ = (id) => document.getElementById(id);
 const A = () => window.Anim || {};
 
-const ROLE_NAMES = { mafia: '마피아', police: '경찰', doctor: '의사', citizen: '시민' };
+const ROLE_NAMES = { mafia: '마피아', police: '경찰', doctor: '의사', citizen: '시민', jester: '광대' };
 const PHASE_NAMES = {
   role_reveal: '직업 공개', night: '밤', morning: '아침 결과', discussion: '낮 토론',
   vote: '투표', defense: '최후 변론', verdict: '찬반 투표', execution: '처형',
@@ -115,8 +115,10 @@ function renderRole() {
   $('role-img').alt = ROLE_NAMES[you.role];
   $('role-name').textContent = ROLE_NAMES[you.role];
   dos.classList.toggle('mafia', you.role === 'mafia');
+  dos.classList.toggle('jester', you.role === 'jester');
   $('role-mates').textContent = you.mafiaTeam
-    ? `동료 ${you.mafiaTeam.filter((m) => m.id !== state.youId).map((m) => m.nickname).join(', ') || '없음'}` : '';
+    ? `동료 ${you.mafiaTeam.filter((m) => m.id !== state.youId).map((m) => m.nickname).join(', ') || '없음'}`
+    : you.role === 'jester' ? '목표: 투표로 처형당하면 혼자 승리' : '';
 }
 
 function targetable(p) {
@@ -274,7 +276,11 @@ function renderActions() {
   if (!you.alive) { msg.textContent = '당신은 사망했습니다. 사망자 채팅으로 대화할 수 있습니다.'; return; }
 
   switch (phase) {
-    case 'role_reveal': msg.textContent = `당신의 직업은 ${ROLE_NAMES[you.role]}입니다.`; break;
+    case 'role_reveal':
+      msg.textContent = you.role === 'jester'
+        ? '당신은 광대입니다. 투표로 처형당하면 혼자 승리합니다. 밤에 죽으면 패배예요.'
+        : `당신의 직업은 ${ROLE_NAMES[you.role]}입니다.`;
+      break;
     case 'night':
       msg.textContent = ({
         mafia: '죽일 사람을 선택하세요. 마피아 채팅으로 상의할 수 있습니다.',
@@ -508,9 +514,11 @@ function wire() {
 
 function showOver(r) {
   const mafiaWin = r.winner === 'mafia';
-  $('over-title').textContent = mafiaWin ? '마피아 팀 승리' : '시민 팀 승리';
-  $('over-kicker').textContent = mafiaWin ? 'THE MAFIA TAKES THE CITY' : 'JUSTICE PREVAILS';
+  const jesterWin = r.winner === 'jester';
+  $('over-title').textContent = jesterWin ? '광대 승리' : mafiaWin ? '마피아 팀 승리' : '시민 팀 승리';
+  $('over-kicker').textContent = jesterWin ? 'THE LAST LAUGH' : mafiaWin ? 'THE MAFIA TAKES THE CITY' : 'JUSTICE PREVAILS';
   document.querySelector('.over-card').classList.toggle('win-mafia', mafiaWin);
+  document.querySelector('.over-card').classList.toggle('win-jester', jesterWin);
   const list = $('over-roles');
   list.replaceChildren();
   r.roles.forEach((x) => {

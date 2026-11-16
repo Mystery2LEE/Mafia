@@ -87,7 +87,7 @@ test('마피아 수 규칙: 기본값과 상한(인원÷3, 최소 1)', () => {
 test('방 생성 검증: 마피아 수는 1 ~ 최대인원÷3 정수', async () => {
   const tryCreate = async (maxPlayers, mafiaCount) => {
     const p = await h.player('mf');
-    const r = await emitAck(p.socket, 'room:create', { title: 'm', maxPlayers, mafiaCount });
+    const r = await emitAck(p.socket, 'room:create', { title: 'm', maxPlayers, mafiaCount, jester: false });
     await emitAck(p.socket, 'room:leave');
     return r;
   };

@@ -1,7 +1,7 @@
 // 연출. CSS keyframes(anim.css) + Web Animations API 만 사용한다.
 // room.js 가 서버 이벤트를 받을 때 window.Anim 의 훅을 호출한다.
 (function () {
-  const ROLE_NAMES = { mafia: '마피아', police: '경찰', doctor: '의사', citizen: '시민' };
+  const ROLE_NAMES = { mafia: '마피아', police: '경찰', doctor: '의사', citizen: '시민', jester: '광대' };
   const $ = (id) => document.getElementById(id);
   const fx = () => $('fx');
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -306,8 +306,8 @@
       const flips = document.querySelectorAll('#over-roles .flip');
       flips.forEach((f, i) => setTimeout(() => f.classList.add('shown'), reduced() ? 0 : 500 + i * 450));
       if (reduced()) return;
-      const colors = r.winner === 'mafia'
-        ? ['#d9473f', '#7a1f1a', '#222', '#ff8a80'] : ['#3a8dff', '#e0b341', '#fff', '#3fb56b'];
+      const colors = r.winner === 'jester' ? ['#a855f7', '#fbbf24', '#f3e8ff', '#ec4899']
+        : r.winner === 'mafia' ? ['#d9473f', '#7a1f1a', '#222', '#ff8a80'] : ['#3a8dff', '#e0b341', '#fff', '#3fb56b'];
       Anim._confetti(colors, 3800);
     },
 

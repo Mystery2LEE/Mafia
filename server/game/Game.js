@@ -212,7 +212,9 @@ class Game extends EventEmitter {
   }
 
   _assignRoles(mafia) {
-    const counts = roleCounts(this.players.size, mafia);
+    // 광대는 옵션이 켜져 있어도 확률로만 등장한다 (있는지 없는지 모르는 것이 추리의 재미)
+    const jester = this.options.jester !== false && crypto.randomInt(1000) < Math.round((this.limits.jesterChance ?? 1) * 1000);
+    const counts = roleCounts(this.players.size, mafia, jester);
     const roles = [];
     for (const [role, n] of Object.entries(counts)) for (let i = 0; i < n; i++) roles.push(role);
     // Fisher-Yates (암호학적 난수)
@@ -223,7 +225,7 @@ class Game extends EventEmitter {
     let i = 0;
     for (const p of this.players.values()) {
       p.role = roles[i++];
-      p.team = p.role === 'mafia' ? 'mafia' : 'citizen';
+      p.team = p.role === 'mafia' ? 'mafia' : p.role === 'jester' ? 'jester' : 'citizen';
       p.alive = true;
       p.executed = false;
       p.stats = { policeHits: 0, doctorSaves: 0 };
@@ -717,6 +719,12 @@ class Game extends EventEmitter {
 
   /** 승리 조건을 확인하고, 충족되면 게임을 끝낸다. @returns {boolean} 종료 여부 */
   _checkWin() {
+    // 중립 광대: 투표로 처형되면 그 즉시 단독 승리 (밤에 마피아에게 죽은 경우는 해당 없음)
+    const jester = [...this.players.values()].find((p) => p.role === 'jester' && p.executed && !p.left);
+    if (jester) {
+      this._endGame('jester', jester);
+      return true;
+    }
     let mafia = 0;
     let citizen = 0;
     for (const p of this.players.values()) {
@@ -731,7 +739,7 @@ class Game extends EventEmitter {
     return true;
   }
 
-  _endGame(winner) {
+  _endGame(winner, jester = null) {
     clearTimeout(this.timer);
     this._clearPause();
     this.rematch.clear();
@@ -739,7 +747,9 @@ class Game extends EventEmitter {
       id: p.id, nickname: p.nickname, role: p.role, team: p.team, alive: p.alive, left: p.left,
     }));
     this.emit('toRoom', 'game:over', { winner, roles });
-    this._system(`게임 종료! ${winner === 'mafia' ? '마피아' : '시민'} 팀이 승리했습니다.`);
+    this._system(winner === 'jester'
+      ? `게임 종료! 광대 ${jester.nickname}님이 처형당해 홀로 승리했습니다.`
+      : `게임 종료! ${winner === 'mafia' ? '마피아' : '시민'} 팀이 승리했습니다.`);
     this.history.mafia = [];
     this.history.dead = [];
     this.defendantId = null;

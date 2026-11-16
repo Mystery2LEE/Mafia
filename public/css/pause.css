@@ -68,6 +68,12 @@ html[data-skin] .pause-card .pause-auto { color: var(--sk-text); }
   .fk-brand { padding: 4px 6px; }
   .fk-nav, .fk-side h6, .fk-me, .fk-recents div:not(.fk-back) { display: none; }
   .fk-hello { flex-direction: column; gap: 8px; }
+  /* 알약은 떠 있지 않고 위쪽 흐름에 놓아 아이콘/제목과 겹치지 않게 */
+  .fk-main { justify-content: flex-start; padding: 14px 14px 40px; overflow-y: auto; }
+  .fk-plan { position: static; align-self: flex-end; margin-bottom: 8vh; }
+  .fk-hello h1 { word-break: keep-all; overflow-wrap: break-word; font-size: clamp(22px, 7vw, 32px); }
+  .fk-hello svg { width: 32px; height: 32px; }
+  .fk-chips span { padding: 6px 11px; font-size: 13px; }
 }
 
 #pause-btn[hidden], .more-btn[hidden] { display: none !important; }
